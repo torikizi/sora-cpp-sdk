@@ -345,6 +345,23 @@ jobs:
       - uses: ./.github/actions/download
         with:
           platform: android
+      # Examples のダウンロード
+      - name: Download Examples
+        uses: actions/download-artifact@v4
+        with:
+          pattern: examples_*
+          merge-multiple: false
+      - name: Archive Examples
+        run: |
+          for d in examples_*; do
+            if [[ "$d" == *"windows"* ]]; then
+              (cd "$d" && zip -r "../$d.zip" .)
+              echo "$d.zip" >> package_paths.env
+            else
+              (cd "$d" && tar czf "../$d.tar.gz" .)
+              echo "$d.tar.gz" >> package_paths.env
+            fi
+          done
       - name: Env to output
         run: |
           echo "package_paths<<EOF" >> $GITHUB_OUTPUT
