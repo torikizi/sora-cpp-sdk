@@ -353,13 +353,16 @@ jobs:
           merge-multiple: false
       - name: Archive Examples
         run: |
-          for d in examples_*; do
-            if [[ "$d" == *"windows"* ]]; then
-              (cd "$d" && zip -r "../$d.zip" .)
-              echo "$d.zip" >> package_paths.env
+          cd examples
+          mkdir -p archives
+          for d in ../examples_*; do
+            base=$(basename "$d")
+            if [[ "$base" == *"windows"* ]]; then
+              (cd "$d" && zip -r "../archives/$base.zip" .)
+              echo "archives/$base.zip" >> package_paths.env
             else
-              (cd "$d" && tar czf "../$d.tar.gz" .)
-              echo "$d.tar.gz" >> package_paths.env
+              (cd "$d" && tar czf "../archives/$base.tar.gz" .)
+              echo "archives/$base.tar.gz" >> package_paths.env
             fi
           done
       - name: Env to output
