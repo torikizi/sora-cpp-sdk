@@ -87,10 +87,8 @@ jobs:
         run: |
           cd examples
           mkdir examples_${{ matrix.name }}
-          foreach ($app in @('sdl_sample', 'sumomo', 'messaging_recvonly_sample')) {
-            python3 "$app\${{ matrix.name }}\run.py" --local-sora-cpp-sdk-dir ..
-            cp "_build\${{ matrix.name }}\release\$app\Release\$app.exe" "examples_${{ matrix.name }}"
-          }
+          python3 sumomo/${{ matrix.name }}/run.py --local-sora-cpp-sdk-dir ..
+          cp _build/${{ matrix.name }}/release/sumomo/Release/sumomo.exe examples_${{ matrix.name }}
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -145,10 +143,8 @@ jobs:
         run: |
           cd examples
           mkdir examples_${{ matrix.name }}
-          for app in sdl_sample sumomo messaging_recvonly_sample; do
-            python3 $app/${{ matrix.name }}/run.py --local-sora-cpp-sdk-dir ..
-            cp _build/${{ matrix.name }}/release/$app/$app examples_${{ matrix.name }}
-          done
+          python3 sumomo/${{ matrix.name }}/run.py --local-sora-cpp-sdk-dir ..
+          cp _build/${{ matrix.name }}/release/sumomo/sumomo examples_${{ matrix.name }}
         if: matrix.name == 'macos_arm64'
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
@@ -299,10 +295,8 @@ jobs:
         run: |
           cd examples
           mkdir examples_${{ matrix.platform.name }}
-          for app in sdl_sample sumomo messaging_recvonly_sample; do
-            python3 $app/${{ matrix.platform.name }}/run.py --local-sora-cpp-sdk-dir ..
-            cp _build/${{ matrix.platform.name }}/release/$app/$app examples_${{ matrix.platform.name }}
-          done
+          python3 sumomo/${{ matrix.platform.name }}/run.py --local-sora-cpp-sdk-dir ..
+          cp _build/${{ matrix.platform.name }}/release/sumomo/sumomo examples_${{ matrix.platform.name }}
         if: matrix.platform.os == 'ubuntu'
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
