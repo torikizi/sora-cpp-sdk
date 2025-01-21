@@ -348,11 +348,13 @@ jobs:
       - name: Archive Examples
         run: |
           for d in examples_*; do
+            mkdir -p "archive/$d"
+            mv "$d" "archive/$d/"
             if [[ "$d" == *"windows"* ]]; then
-              (cd "$d" && zip -r "../$d.zip" .)
+              (cd archive && zip -r "../$d.zip" "$d")
               echo "$d.zip" >> package_paths.env
             else
-              (cd "$d" && tar czf "../$d.tar.gz" .)
+              (cd archive && tar czf "../$d.tar.gz" "$d")
               echo "$d.tar.gz" >> package_paths.env
             fi
           done
