@@ -343,14 +343,14 @@ jobs:
       - name: Download Examples
         uses: actions/download-artifact@v4
         with:
-          pattern: examples_*
+          pattern: sumomo_*
           merge-multiple: false
       - name: Archive Examples
         run: |
-          for d in examples_*; do
+          for d in sumomo_*; do
             mkdir -p "archive/$d"
             mv "$d" "archive/$d/"
-            if [[ "$d" == "examples_macos_arm64" ]]; then
+            if [[ "$d" == "sumomo_macos_arm64" ]]; then
               mv "archive/$d/$d/sumomo" "archive/$d/sumomo"
               rmdir "archive/$d/$d"
             fi
