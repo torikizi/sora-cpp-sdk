@@ -353,13 +353,13 @@ jobs:
             if [[ "$d" == "examples_macos_arm64" ]]; then
               mv "archive/$d/$d/sumomo" "archive/$d/sumomo"
               rmdir "archive/$d/$d"
-              (cd archive && tar czf "../sumomo_macos_arm64.tar.gz" "sumomo")
+              (cd archive && tar czf "../sumomo_macos_arm64.tar.gz" "$d")
               echo "sumomo_macos_arm64.tar.gz" >> package_paths.env
             elif [[ "$d" == *"windows"* ]]; then
-              (cd archive && zip -r "../sumomo_windows_x86_64.zip" "sumomo")
+              (cd archive && zip -r "../sumomo_windows_x86_64.zip" "$d")
               echo "sumomo_windows_x86_64.zip" >> package_paths.env
             else
-              (cd archive && tar czf "../sumomo_${d#examples_}.tar.gz" "sumomo")
+              (cd archive && tar czf "../sumomo_${d#examples_}.tar.gz" "$d")
               echo "sumomo_${d#examples_}.tar.gz" >> package_paths.env
             fi
           done
