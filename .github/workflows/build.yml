@@ -347,19 +347,19 @@ jobs:
           merge-multiple: false
       - name: Archive Examples
         run: |
-          for d in sumomo_*; do
+          for d in examples_*; do
             mkdir -p "archive/$d"
             mv "$d" "archive/$d/"
-            if [[ "$d" == "sumomo_macos_arm64" ]]; then
+            if [[ "$d" == "examples_macos_arm64" ]]; then
               mv "archive/$d/$d/sumomo" "archive/$d/sumomo"
               rmdir "archive/$d/$d"
             fi
             if [[ "$d" == *"windows"* ]]; then
-              (cd archive && zip -r "../$d.zip" "$d")
-              echo "$d.zip" >> package_paths.env
+              (cd archive && zip -r "../sumomo_$d.zip" "$d")
+              echo "sumomo_$d.zip" >> package_paths.env
             else
-              (cd archive && tar czf "../$d.tar.gz" "$d")
-              echo "$d.tar.gz" >> package_paths.env
+              (cd archive && tar czf "../sumomo_$d.tar.gz" "$d")
+              echo "sumomo_$d.tar.gz" >> package_paths.env
             fi
           done
       - name: Env to output
