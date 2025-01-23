@@ -87,8 +87,10 @@ jobs:
         run: |
           cd examples
           mkdir examples_${{ matrix.name }}
-          python3 sumomo/${{ matrix.name }}/run.py --local-sora-cpp-sdk-dir ..
-          cp _build/${{ matrix.name }}/release/sumomo/Release/sumomo.exe examples_${{ matrix.name }}
+          foreach ($app in @('sdl_sample', 'sumomo', 'messaging_recvonly_sample')) {
+            python3 "$app\${{ matrix.name }}\run.py" --local-sora-cpp-sdk-dir ..
+            cp "_build\${{ matrix.name }}\release\$app\Release\$app.exe" "examples_${{ matrix.name }}"
+          }
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -143,8 +145,10 @@ jobs:
         run: |
           cd examples
           mkdir examples_${{ matrix.name }}
-          python3 sumomo/${{ matrix.name }}/run.py --local-sora-cpp-sdk-dir ..
-          cp _build/${{ matrix.name }}/release/sumomo/sumomo examples_${{ matrix.name }}
+          for app in sdl_sample sumomo messaging_recvonly_sample; do
+            python3 $app/${{ matrix.name }}/run.py --local-sora-cpp-sdk-dir ..
+            cp _build/${{ matrix.name }}/release/$app/$app examples_${{ matrix.name }}
+          done
         if: matrix.name == 'macos_arm64'
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
@@ -232,6 +236,9 @@ jobs:
           # X11
           sudo apt-get install libx11-dev libxext-dev
 
+          # OpenGL
+          sudo apt-get install -y libgl-dev
+
           # CUDA
           source /etc/os-release
           # 20.04 は自前の libssl1.1 があるので不要
@@ -251,7 +258,7 @@ jobs:
       - name: Install deps for ${{ matrix.platform.name }}
         if: matrix.platform.os == 'ubuntu' && matrix.platform.arch == 'armv8'
         run: |
-          sudo apt-get -y install multistrap binutils-aarch64-linux-gnu
+          sudo apt-get -y install multistrap binutils-aarch64-linux-gnu libgl-dev
           # multistrap に insecure なリポジトリからの取得を許可する設定を入れる
           sudo sed -e 's/Apt::Get::AllowUnauthenticated=true/Apt::Get::AllowUnauthenticated=true";\n$config_str .= " -o Acquire::AllowInsecureRepositories=true/' -i /usr/sbin/multistrap
       - name: Install deps for Android
@@ -295,8 +302,10 @@ jobs:
         run: |
           cd examples
           mkdir examples_${{ matrix.platform.name }}
-          python3 sumomo/${{ matrix.platform.name }}/run.py --local-sora-cpp-sdk-dir ..
-          cp _build/${{ matrix.platform.name }}/release/sumomo/sumomo examples_${{ matrix.platform.name }}
+          for app in sdl_sample sumomo messaging_recvonly_sample; do
+            python3 $app/${{ matrix.platform.name }}/run.py --local-sora-cpp-sdk-dir ..
+            cp _build/${{ matrix.platform.name }}/release/$app/$app examples_${{ matrix.platform.name }}
+          done
         if: matrix.platform.os == 'ubuntu'
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
