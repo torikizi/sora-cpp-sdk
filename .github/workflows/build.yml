@@ -356,20 +356,28 @@ jobs:
           merge-multiple: false
       - name: Archive Examples
         run: |
-          for d in examples_*; do
-            mkdir -p "archive/$d"
-            mv "$d" "archive/$d/"
-            if [[ "$d" == "examples_macos_arm64" ]]; then
-              mv "archive/$d/$d/sumomo" "archive/$d/sumomo"
-              rm -rf "archive/$d/$d"
-              (cd archive && tar czf "../sumomo_macos_arm64.tar.gz" "$d")
+          for platform in \
+              windows_x86_64 \
+              macos_arm64 \
+              ubuntu-20.04_x86_64 \
+              ubuntu-22.04_x86_64 \
+              ubuntu-24.04_x86_64 \
+              ubuntu-24.04_armv8; do
+            src_dir="examples_${platform}"
+            archive_dir="archive/${platform}"
+            mkdir -p "$archive_dir"
+            if [[ "$platform" == "macos_arm64" ]]; then
+              cp "${src_dir}/sumomo" "$archive_dir/"
+              (cd archive && tar czf "../sumomo_macos_arm64.tar.gz" "${platform}")
               echo "sumomo_macos_arm64.tar.gz" >> package_paths.env
-            elif [[ "$d" == *"windows"* ]]; then
-              (cd archive && zip -r "../sumomo_windows_x86_64.zip" "$d")
+            elif [[ "$platform" == "windows_x86_64" ]]; then
+              cp "${src_dir}/sumomo.exe" "$archive_dir/"
+              (cd archive && zip -r "../sumomo_windows_x86_64.zip" "${platform}")
               echo "sumomo_windows_x86_64.zip" >> package_paths.env
             else
-              (cd archive && tar czf "../sumomo_${d#examples_}.tar.gz" "$d")
-              echo "sumomo_${d#examples_}.tar.gz" >> package_paths.env
+              cp "${src_dir}/sumomo" "$archive_dir/"
+              (cd archive && tar czf "../sumomo_${platform}.tar.gz" "${platform}")
+              echo "sumomo_${platform}.tar.gz" >> package_paths.env
             fi
           done
       - name: Env to output
