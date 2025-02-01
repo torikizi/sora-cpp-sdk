@@ -354,8 +354,12 @@ jobs:
         with:
           pattern: examples_*
           merge-multiple: false
+      # sumomo のみを抜き出して、アーカイブにする
       - name: Archive Examples
         run: |
+          # アーカイブ用の親ディレクトリを作成
+          mkdir -p archive
+          # プラットフォームごとに処理を実行
           for platform in \
               windows_x86_64 \
               macos_arm64 \
@@ -363,20 +367,24 @@ jobs:
               ubuntu-22.04_x86_64 \
               ubuntu-24.04_x86_64 \
               ubuntu-24.04_armv8; do
+            # ダウンロード済みの artifact ディレクトリ（例: examples_macos_arm64）
             src_dir="examples_${platform}"
-            archive_dir="archive/${platform}"
+            # アーカイブ用のディレクトリは、sumomo_<platform> とする
+            archive_dir="archive/sumomo_${platform}"
             mkdir -p "$archive_dir"
-            if [[ "$platform" == "macos_arm64" ]]; then
-              cp "${src_dir}/sumomo" "$archive_dir/"
-              (cd archive && tar czf "../sumomo_macos_arm64.tar.gz" "${platform}")
-              echo "sumomo_macos_arm64.tar.gz" >> package_paths.env
-            elif [[ "$platform" == "windows_x86_64" ]]; then
+            # プラットフォームごとに sumomo の実行ファイルをコピー
+            if [[ "$platform" == "windows_x86_64" ]]; then
               cp "${src_dir}/sumomo.exe" "$archive_dir/"
-              (cd archive && zip -r "../sumomo_windows_x86_64.zip" "${platform}")
+              # Windows は zip 形式にする
+              (cd archive && zip -r "../sumomo_windows_x86_64.zip" "sumomo_${platform}")
               echo "sumomo_windows_x86_64.zip" >> package_paths.env
+            elif [[ "$platform" == "macos_arm64" ]]; then
+              cp "${src_dir}/sumomo" "$archive_dir/"
+              (cd archive && tar czf "../sumomo_macos_arm64.tar.gz" "sumomo_${platform}")
+              echo "sumomo_macos_arm64.tar.gz" >> package_paths.env
             else
               cp "${src_dir}/sumomo" "$archive_dir/"
-              (cd archive && tar czf "../sumomo_${platform}.tar.gz" "${platform}")
+              (cd archive && tar czf "../sumomo_${platform}.tar.gz" "sumomo_${platform}")
               echo "sumomo_${platform}.tar.gz" >> package_paths.env
             fi
           done
