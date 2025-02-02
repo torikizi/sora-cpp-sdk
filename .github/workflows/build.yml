@@ -319,25 +319,62 @@ jobs:
       - name: Download SDK Artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build-windows.outputs.package_name }}
+          # build-windows の outputs が "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip" で出ているので、
+          # ここで末尾に .zip を追加してダウンロードすると実際には
+          # "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip.zip" というファイル名になる
+          name: ${{ needs.build-windows.outputs.package_name }}.zip
           path: sdk_temp
 
       # Boostアーティファクトをダウンロード
       - name: Download Boost Artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build-windows.outputs.boost_name }}
+          name: ${{ needs.build-windows.outputs.boost_name }}.zip
           path: sdk_temp
 
-      # SDKアーティファクトを展開
-      - name: Extract SDK Artifact
+      # SDKアーティファクトをダブル展開する（最終的に末尾の ".zip" を除いたフォルダに展開）
+      - name: Double Extract SDK Artifact
+        shell: pwsh
         run: |
-          Expand-Archive -Path "sdk_temp\\${{ needs.build-windows.outputs.package_name }}.zip" -DestinationPath "sdk_temp" -Force
+          # build-windows の outputs 例: "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip"
+          $packageName = "${{ needs.build-windows.outputs.package_name }}"
+          # ダウンロードされたファイルは "$packageName.zip" となっている（例: "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip.zip"）
+          $downloadedZip = "sdk_temp\$packageName.zip"
+          Write-Host "Downloaded SDK ZIP: $downloadedZip"
+          # 最終的なフォルダは、$packageName から末尾の ".zip" を除いたもの
+          $finalFolder = $packageName.Substring(0, $packageName.Length - 4)
+          $finalDir = "sdk_temp\$finalFolder"
+          # 中間展開用の一時ディレクトリ
+          $intermediateDir = "sdk_temp\intermediate_sdk"
+          Write-Host "Intermediate directory: $intermediateDir"
+          Write-Host "Final extraction directory: $finalDir"
+          New-Item -ItemType Directory -Path $intermediateDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $finalDir -Force | Out-Null
+          # 1回目の展開：ダウンロードした ZIP を中間ディレクトリに展開
+          Expand-Archive -Path $downloadedZip -DestinationPath $intermediateDir -Force
+          # 2回目の展開：中間ディレクトリ内に、元の ZIP ファイル（名前は $packageName と同じ）がある前提で展開
+          $innerZip = Join-Path $intermediateDir $packageName
+          Write-Host "Inner SDK ZIP: $innerZip"
+          Expand-Archive -Path $innerZip -DestinationPath $finalDir -Force
 
-      # Boostアーティファクトを展開
-      - name: Extract Boost Artifact
+      # Boostアーティファクトをダブル展開する
+      - name: Double Extract Boost Artifact
+        shell: pwsh
         run: |
-          Expand-Archive -Path "sdk_temp\\${{ needs.build-windows.outputs.boost_name }}.zip" -DestinationPath "sdk_temp" -Force
+          $boostName = "${{ needs.build-windows.outputs.boost_name }}"
+          $downloadedZip = "sdk_temp\$boostName.zip"
+          Write-Host "Downloaded Boost ZIP: $downloadedZip"
+          $finalFolder = $boostName.Substring(0, $boostName.Length - 4)
+          $finalDir = "sdk_temp\$finalFolder"
+          $intermediateDir = "sdk_temp\intermediate_boost"
+          Write-Host "Intermediate directory (Boost): $intermediateDir"
+          Write-Host "Final extraction directory (Boost): $finalDir"
+          New-Item -ItemType Directory -Path $intermediateDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $finalDir -Force | Out-Null
+          Expand-Archive -Path $downloadedZip -DestinationPath $intermediateDir -Force
+          $innerZip = Join-Path $intermediateDir $boostName
+          Write-Host "Inner Boost ZIP: $innerZip"
+          Expand-Archive -Path $innerZip -DestinationPath $finalDir -Force
 
       # examplesをビルド
       - name: Build Example
