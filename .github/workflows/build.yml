@@ -346,7 +346,7 @@ jobs:
 
   # macOS の Examples ビルド
   build-macos-examples:
-    needs: build-macos
+    needs: create-release
     runs-on: macos-14
     strategy:
       matrix:
