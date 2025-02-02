@@ -82,6 +82,20 @@ jobs:
         with:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
+      # Examples のビルド
+      - name: Build Examples
+        run: |
+          cd examples
+          mkdir examples_${{ matrix.name }}
+          foreach ($app in @('sdl_sample', 'sumomo', 'messaging_recvonly_sample')) {
+            python3 "$app\${{ matrix.name }}\run.py" --local-sora-cpp-sdk-dir ..
+            cp "_build\${{ matrix.name }}\release\$app\Release\$app.exe" "examples_${{ matrix.name }}"
+          }
+      - name: Upload Examples Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: examples_${{ matrix.name }}
+          path: examples/examples_${{ matrix.name }}
   build-macos:
     strategy:
       fail-fast: false
@@ -126,22 +140,6 @@ jobs:
         with:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
-      # Examples のビルド
-      - name: Build Examples
-        run: |
-          cd examples
-          mkdir examples_${{ matrix.name }}
-          for app in sdl_sample sumomo messaging_recvonly_sample; do
-            python3 $app/${{ matrix.name }}/run.py --local-sora-cpp-sdk-dir ..
-            cp _build/${{ matrix.name }}/release/$app/$app examples_${{ matrix.name }}
-          done
-        if: matrix.name == 'macos_arm64'
-      - name: Upload Examples Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: examples_${{ matrix.name }}
-          path: examples/examples_${{ matrix.name }}
-        if: matrix.name == 'macos_arm64'
   build-ubuntu:
     strategy:
       fail-fast: false
@@ -300,97 +298,6 @@ jobs:
           path: examples/examples_${{ matrix.platform.name }}
         if: matrix.platform.os == 'ubuntu'
 
-  # Examples のビルド
-  build-windows-examples:
-    needs: build-windows
-    runs-on: windows-2022
-    strategy:
-      matrix:
-        example:
-          - name: sumomo
-          - name: sdl_sample
-          - name: messaging_recvonly_sample
-    steps:
-      # リポジトリをチェックアウト
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # SDKアーティファクトをダウンロード
-      - name: Download SDK Artifact
-        uses: actions/download-artifact@v4
-        with:
-          # build-windows の outputs が "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip" で出ているので、
-          # ここで末尾に .zip を追加してダウンロードすると実際には
-          # "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip.zip" というファイル名になる
-          name: ${{ needs.build-windows.outputs.package_name }}
-          path: sdk_temp
-
-      # Boostアーティファクトをダウンロード
-      - name: Download Boost Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ needs.build-windows.outputs.boost_name }}
-          path: sdk_temp
-
-      # SDKアーティファクトをダブル展開する（最終的に末尾の ".zip" を除いたフォルダに展開）
-      - name: Double Extract SDK Artifact
-        shell: pwsh
-        run: |
-          # build-windows の outputs 例: "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip"
-          $packageName = "${{ needs.build-windows.outputs.package_name }}"
-          # ダウンロードされたファイルは "$packageName.zip" となっている（例: "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip.zip"）
-          $downloadedZip = "sdk_temp\$packageName.zip"
-          Write-Host "Downloaded SDK ZIP: $downloadedZip"
-          # 最終的なフォルダは、$packageName から末尾の ".zip" を除いたもの
-          $finalFolder = $packageName.Substring(0, $packageName.Length - 4)
-          $finalDir = "sdk_temp\$finalFolder"
-          # 中間展開用の一時ディレクトリ
-          $intermediateDir = "sdk_temp\intermediate_sdk"
-          Write-Host "Intermediate directory: $intermediateDir"
-          Write-Host "Final extraction directory: $finalDir"
-          New-Item -ItemType Directory -Path $intermediateDir -Force | Out-Null
-          New-Item -ItemType Directory -Path $finalDir -Force | Out-Null
-          # 1回目の展開：ダウンロードした ZIP を中間ディレクトリに展開
-          Expand-Archive -Path $downloadedZip -DestinationPath $intermediateDir -Force
-          # 2回目の展開：中間ディレクトリ内に、元の ZIP ファイル（名前は $packageName と同じ）がある前提で展開
-          $innerZip = Join-Path $intermediateDir $packageName
-          Write-Host "Inner SDK ZIP: $innerZip"
-          Expand-Archive -Path $innerZip -DestinationPath $finalDir -Force
-
-      # Boostアーティファクトをダブル展開する
-      - name: Double Extract Boost Artifact
-        shell: pwsh
-        run: |
-          $boostName = "${{ needs.build-windows.outputs.boost_name }}"
-          $downloadedZip = "sdk_temp\$boostName.zip"
-          Write-Host "Downloaded Boost ZIP: $downloadedZip"
-          $finalFolder = $boostName.Substring(0, $boostName.Length - 4)
-          $finalDir = "sdk_temp\$finalFolder"
-          $intermediateDir = "sdk_temp\intermediate_boost"
-          Write-Host "Intermediate directory (Boost): $intermediateDir"
-          Write-Host "Final extraction directory (Boost): $finalDir"
-          New-Item -ItemType Directory -Path $intermediateDir -Force | Out-Null
-          New-Item -ItemType Directory -Path $finalDir -Force | Out-Null
-          Expand-Archive -Path $downloadedZip -DestinationPath $intermediateDir -Force
-          $innerZip = Join-Path $intermediateDir $boostName
-          Write-Host "Inner Boost ZIP: $innerZip"
-          Expand-Archive -Path $innerZip -DestinationPath $finalDir -Force
-
-      # examplesをビルド
-      - name: Build Example
-        working-directory: examples
-        run: |
-          mkdir examples_${{ matrix.example.name }}
-          python3 "${{ matrix.example.name }}\\${{ matrix.example.name }}\\run.py" --local-sora-cpp-sdk-dir ..\\sdk_temp
-          cp "_build\\${{ matrix.example.name }}\\release\\${{ matrix.example.name }}\\Release\\${{ matrix.example.name }}.exe" "examples_${{ matrix.example.name }}"
-
-      # ビルドされたexamplesをアーティファクトとしてアップロード
-      - name: Upload Examples Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: examples_${{ matrix.example.name }}
-          path: examples/examples_${{ matrix.example.name }}
-
   create-release:
     name: Create Release
     if: contains(github.ref, 'tags/202')
@@ -425,58 +332,6 @@ jobs:
       - uses: ./.github/actions/download
         with:
           platform: android
-      # Examples のダウンロード
-      - name: Download Examples
-        uses: actions/download-artifact@v4
-        with:
-          pattern: examples_*
-          merge-multiple: false
-      # sumomo のみを抜き出して、アーカイブにする
-      - name: Archive Examples
-        run: |
-          # アーカイブ用の親ディレクトリを作成
-          mkdir -p archive
-          # プラットフォームごとに処理を実行
-          for platform in \
-              windows_x86_64 \
-              macos_arm64 \
-              ubuntu-20.04_x86_64 \
-              ubuntu-22.04_x86_64 \
-              ubuntu-24.04_x86_64 \
-              ubuntu-24.04_armv8; do
-            # ダウンロード済みの artifact ディレクトリ
-            src_dir="examples_${platform}"
-            # アーカイブ用のディレクトリは、sumomo_<platform> とする
-            archive_dir="archive/sumomo_${platform}"
-            mkdir -p "$archive_dir"
-            # プラットフォームごとに sumomo の実行ファイルをコピー
-            if [[ "$platform" == "windows_x86_64" ]]; then
-              cp "${src_dir}/sumomo.exe" "$archive_dir/"
-              # Windows は zip 形式でアーカイブするため、archive ディレクトリに移動して実行
-              cd archive
-              zip -r "../sumomo_windows_x86_64.zip" "sumomo_${platform}"
-              # アーカイブ作成後、元のディレクトリに戻る
-              cd ..
-              echo "sumomo_windows_x86_64.zip" >> package_paths.env
-            elif [[ "$platform" == "macos_arm64" ]]; then
-              cp "${src_dir}/sumomo" "$archive_dir/"
-              # macOS は tar.gz 形式でアーカイブするため、archive ディレクトリに移動して実行
-              cd archive
-              tar czf "../sumomo_macos_arm64.tar.gz" "sumomo_${platform}"
-              # アーカイブ作成後、元のディレクトリに戻る
-              cd ..
-              echo "sumomo_macos_arm64.tar.gz" >> package_paths.env
-            else
-              cp "${src_dir}/sumomo" "$archive_dir/"
-              # tar.gz 形式でアーカイブする
-              cd archive
-              tar czf "../sumomo_${platform}.tar.gz" "sumomo_${platform}"
-              # アーカイブ作成後、元のディレクトリに戻る
-              cd ..
-              (cd archive && tar czf "../sumomo_${platform}.tar.gz" "sumomo_${platform}")
-              echo "sumomo_${platform}.tar.gz" >> package_paths.env
-            fi
-          done
       - name: Env to output
         run: |
           echo "package_paths<<EOF" >> $GITHUB_OUTPUT
@@ -488,6 +343,46 @@ jobs:
         with:
           files: ${{ steps.env.outputs.package_paths }}
           prerelease: ${{ contains(github.ref, 'canary') }}
+
+  # macOS の Examples ビルド
+  build-macos-examples:
+    needs: create-release
+    runs-on: macos-14
+    strategy:
+      matrix:
+        example:
+          - name: sumomo
+    steps:
+      # リポジトリをチェックアウト
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # リリースアーティファクトをダウンロード
+      - name: Download Release Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sumomo_macos_arm64
+          path: examples_temp
+
+      # アーティファクトを展開
+      - name: Extract Release Artifact
+        run: |
+          tar -xzf examples_temp/sumomo_macos_arm64.tar.gz -C examples_temp
+
+      # examplesをビルド
+      - name: Build Example
+        working-directory: examples
+        run: |
+          mkdir examples_${{ matrix.example.name }}
+          python3 "${{ matrix.example.name }}/run.py" --local-sora-cpp-sdk-dir ../examples_temp
+          cp "_build/${{ matrix.example.name }}/release/${{ matrix.example.name }}/${{ matrix.example.name }}" "examples_${{ matrix.example.name }}"
+
+      # ビルドされたexamplesをアーティファクトとしてアップロード
+      - name: Upload Examples Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: examples_${{ matrix.example.name }}
+          path: examples/examples_${{ matrix.example.name }}
 
   notification:
     name: Slack Notification
