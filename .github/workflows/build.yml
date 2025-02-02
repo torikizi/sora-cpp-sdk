@@ -401,7 +401,7 @@ jobs:
           working-directory: examples
           run: |
             mkdir examples_${{ matrix.example.name }}
-            python3 "${{ matrix.example.name }}/run.py" --local-sora-cpp-sdk-dir ../examples_temp
+            python3 "${{ matrix.example.name }}/macos_arm64/run.py" --local-sora-cpp-sdk-dir ../examples_temp
             cp "_build/${{ matrix.example.name }}/release/${{ matrix.example.name }}/${{ matrix.example.name }}" "examples_${{ matrix.example.name }}"
   
         # ビルドしたexamplesをアップロード
@@ -415,7 +415,7 @@ jobs:
         - name: Debug - List built files
           run: |
             echo "Contents of examples directory:"
-            ls -la examples/examples_${{ matrix.example.name }}/
+            ls -la examples/examples_${{ matrix.example.name }}
 
   notification:
     name: Slack Notification
