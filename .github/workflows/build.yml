@@ -319,25 +319,25 @@ jobs:
       - name: Download SDK Artifact
         uses: actions/download-artifact@v4
         with:
-          name: sora-cpp-sdk-${{ needs.build-windows.outputs.package_name }}_windows_x86_64
+          name: ${{ needs.build-windows.outputs.package_name }}
           path: sdk_temp
 
       # Boostアーティファクトをダウンロード
       - name: Download Boost Artifact
         uses: actions/download-artifact@v4
         with:
-          name: boost-${{ needs.build-windows.outputs.package_name }}_windows_x86_64
+          name: ${{ needs.build-windows.outputs.boost_name }}
           path: sdk_temp
 
       # SDKアーティファクトを展開
       - name: Extract SDK Artifact
         run: |
-          Expand-Archive -Path "sdk_temp\\sora-cpp-sdk-${{ needs.build-windows.outputs.package_name }}_windows_x86_64.zip" -DestinationPath "sdk_temp" -Force
+          Expand-Archive -Path "sdk_temp\\${{ needs.build-windows.outputs.package_name }}.zip" -DestinationPath "sdk_temp" -Force
 
       # Boostアーティファクトを展開
       - name: Extract Boost Artifact
         run: |
-          Expand-Archive -Path "sdk_temp\\boost-${{ needs.build-windows.outputs.package_name }}_windows_x86_64.zip" -DestinationPath "sdk_temp" -Force
+          Expand-Archive -Path "sdk_temp\\${{ needs.build-windows.outputs.boost_name }}.zip" -DestinationPath "sdk_temp" -Force
 
       # examplesをビルド
       - name: Build Example
