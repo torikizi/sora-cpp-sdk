@@ -82,20 +82,6 @@ jobs:
         with:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
-      # Examples のビルド
-      - name: Build Examples
-        run: |
-          cd examples
-          mkdir examples_${{ matrix.name }}
-          foreach ($app in @('sdl_sample', 'sumomo', 'messaging_recvonly_sample')) {
-            python3 "$app\${{ matrix.name }}\run.py" --local-sora-cpp-sdk-dir ..
-            cp "_build\${{ matrix.name }}\release\$app\Release\$app.exe" "examples_${{ matrix.name }}"
-          }
-      - name: Upload Examples Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: examples_${{ matrix.name }}
-          path: examples/examples_${{ matrix.name }}
   build-macos:
     strategy:
       fail-fast: false
@@ -313,6 +299,48 @@ jobs:
           name: examples_${{ matrix.platform.name }}
           path: examples/examples_${{ matrix.platform.name }}
         if: matrix.platform.os == 'ubuntu'
+
+  # Examples のビルド
+  build-windows-examples:
+    needs: build-windows
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        example:
+          - name: sumomo
+          - name: sdp_sample
+          - name: messaging_recvonly_sample
+    steps:
+      # リポジトリをチェックアウト
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # SDKアーティファクトをダウンロード
+      - name: Download SDK Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk_artifact_windows_x86_64
+          path: sdk_temp
+
+      # SDKアーティファクトを展開
+      - name: Extract SDK Artifact
+        run: |
+          Expand-Archive -Path "sdk_temp\\sdk_artifact_windows_x86_64.zip" -DestinationPath "sdk_temp" -Force
+
+      # examplesをビルド
+      - name: Build Example
+        working-directory: examples
+        run: |
+          mkdir examples_${{ matrix.example.name }}
+          python3 "${{ matrix.example.name }}\\${{ matrix.example.name }}\\run.py" --local-sora-cpp-sdk-dir ..\\sdk_temp
+          cp "_build\\${{ matrix.example.name }}\\release\\${{ matrix.example.name }}\\Release\\${{ matrix.example.name }}.exe" "examples_${{ matrix.example.name }}"
+
+      # ビルドされたexamplesをアーティファクトとしてアップロード
+      - name: Upload Examples Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: examples_${{ matrix.example.name }}
+          path: examples/examples_${{ matrix.example.name }}
 
   create-release:
     name: Create Release
