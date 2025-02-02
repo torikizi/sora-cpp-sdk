@@ -322,14 +322,14 @@ jobs:
           # build-windows の outputs が "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip" で出ているので、
           # ここで末尾に .zip を追加してダウンロードすると実際には
           # "sora-cpp-sdk-2025.2.0-canary.3_windows_x86_64.zip.zip" というファイル名になる
-          name: ${{ needs.build-windows.outputs.package_name }}.zip
+          name: ${{ needs.build-windows.outputs.package_name }}
           path: sdk_temp
 
       # Boostアーティファクトをダウンロード
       - name: Download Boost Artifact
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build-windows.outputs.boost_name }}.zip
+          name: ${{ needs.build-windows.outputs.boost_name }}
           path: sdk_temp
 
       # SDKアーティファクトをダブル展開する（最終的に末尾の ".zip" を除いたフォルダに展開）
