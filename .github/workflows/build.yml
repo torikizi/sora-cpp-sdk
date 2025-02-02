@@ -346,43 +346,76 @@ jobs:
 
   # macOS の Examples ビルド
   build-macos-examples:
-    needs: create-release
+    needs: build-macos
     runs-on: macos-14
     strategy:
       matrix:
         example:
-          - name: sumomo
+            - name: sumomo
     steps:
-      # リポジトリをチェックアウト
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # リリースアーティファクトをダウンロード
-      - name: Download Release Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: sumomo_macos_arm64
-          path: examples_temp
-
-      # アーティファクトを展開
-      - name: Extract Release Artifact
-        run: |
-          tar -xzf examples_temp/sumomo_macos_arm64.tar.gz -C examples_temp
-
-      # examplesをビルド
-      - name: Build Example
-        working-directory: examples
-        run: |
-          mkdir examples_${{ matrix.example.name }}
-          python3 "${{ matrix.example.name }}/run.py" --local-sora-cpp-sdk-dir ../examples_temp
-          cp "_build/${{ matrix.example.name }}/release/${{ matrix.example.name }}/${{ matrix.example.name }}" "examples_${{ matrix.example.name }}"
-
-      # ビルドされたexamplesをアーティファクトとしてアップロード
-      - name: Upload Examples Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: examples_${{ matrix.example.name }}
-          path: examples/examples_${{ matrix.example.name }}
+        # リポジトリをチェックアウト
+        - uses: actions/checkout@v4
+  
+        # Select Xcode 15.4（build-macosと同じバージョンを使う）
+        - name: Select Xcode 15.4
+          run: sudo xcode-select --switch /Applications/Xcode_15.4.app/Contents/Developer
+        
+        # 全アーティファクトをダウンロード
+        - name: Download all artifacts
+          uses: actions/download-artifact@v4
+          with:
+            path: artifacts_temp
+            pattern: '*macos_arm64*'
+            merge-multiple: true
+  
+        # デバッグ用：ダウンロードしたファイルを確認
+        - name: Debug - List downloaded files
+          run: |
+            echo "Contents of artifacts_temp:"
+            ls -la artifacts_temp/
+            find artifacts_temp/ -type f
+            
+        # SDKファイルの準備
+        - name: Prepare SDK files
+          run: |
+            # SDK本体を見つけて解凍
+            SDK_FILE=$(find artifacts_temp/ -name "sora-cpp-sdk-*_macos_arm64.tar.gz")
+            echo "Found SDK file: $SDK_FILE"
+            
+            # Boostライブラリを見つけて解凍
+            BOOST_FILE=$(find artifacts_temp/ -name "boost-*_macos_arm64.tar.gz")
+            echo "Found Boost file: $BOOST_FILE"
+            
+            # 作業ディレクトリを作成
+            mkdir -p examples_temp
+            
+            # ファイルを解凍
+            tar -xzf "$SDK_FILE" -C examples_temp
+            tar -xzf "$BOOST_FILE" -C examples_temp
+            
+            echo "Contents of examples_temp after extraction:"
+            ls -la examples_temp/
+  
+        # examplesをビルド
+        - name: Build Example
+          working-directory: examples
+          run: |
+            mkdir examples_${{ matrix.example.name }}
+            python3 "${{ matrix.example.name }}/run.py" --local-sora-cpp-sdk-dir ../examples_temp
+            cp "_build/${{ matrix.example.name }}/release/${{ matrix.example.name }}/${{ matrix.example.name }}" "examples_${{ matrix.example.name }}"
+  
+        # ビルドしたexamplesをアップロード
+        - name: Upload Examples Artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: examples_${{ matrix.example.name }}
+            path: examples/examples_${{ matrix.example.name }}
+  
+        # デバッグ用：ビルド成果物の確認
+        - name: Debug - List built files
+          run: |
+            echo "Contents of examples directory:"
+            ls -la examples/examples_${{ matrix.example.name }}/
 
   notification:
     name: Slack Notification
