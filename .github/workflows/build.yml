@@ -356,6 +356,24 @@ jobs:
             name: ${{ matrix.example.name }}_macos_arm64
             path: examples/_build/macos_arm64/release/${{ matrix.example.name }}
 
+  # macOS の Examples をリリース
+  create-release-example:
+    name: Create Release macOS Example
+    needs: build-macos-examples
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # build-macos-examples でビルドした Examples のアーティファクトをダウンロード
+      - uses: actions/download-artifact@v4
+        with:
+          name: sumomo_macos_arm64
+      # GitHub Releaseを作成し、Examplesをアップロード
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: sumomo
+          prerelease: ${{ contains(github.ref, 'canary') }}
+
   notification:
     if: false
     name: Slack Notification
