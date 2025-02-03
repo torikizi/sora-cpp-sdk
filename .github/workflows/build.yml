@@ -396,6 +396,7 @@ jobs:
 
   # Ubuntu の Examples ビルド
   build-ubuntu-examples:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
