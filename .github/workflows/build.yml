@@ -309,6 +309,7 @@ jobs:
       #- build-ubuntu
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/download
         with:
           platform: macos_arm64
@@ -411,7 +412,9 @@ jobs:
     steps:
       - uses: rtCamp/action-slack-notify@v2
         if: |
+          needs.build-windows.result == 'failure' ||
           needs.build-macos.result == 'failure' ||
+          needs.build-ubuntu.result == 'failure' ||
           needs.create-release.result == 'failure'
         env:
           SLACK_CHANNEL: sora-cpp-sdk
