@@ -378,11 +378,20 @@ jobs:
             echo "Contents of sora_sdk after extraction:"
             ls -la sora_sdk/
 
+        - name: Check directory structure
+          working-directory: ${{ github.workspace }}
+          run: |
+            echo "Root directory structure:"
+            ls -la
+            echo "\nExamples directory structure:"
+            ls -la examples/
+            echo "\nSumomo directory structure:"
+            ls -la examples/sumomo/macos_arm64/
+
         # examplesをビルド
         - name: Build Example
           working-directory: ${{ github.workspace }}/examples
           run: |
-            cd examples
             pwd
             mkdir -p examples_${{ matrix.example.name }}
             python3 "${{ matrix.example.name }}/macos_arm64/run.py" --local-sora-cpp-sdk-dir ../sora_sdk
