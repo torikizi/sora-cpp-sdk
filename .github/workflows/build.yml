@@ -290,8 +290,8 @@ jobs:
     name: Create Release
     if: contains(github.ref, 'tags/202')
     needs:
-      # - build-windows
-      - build-macos
+      - build-windows
+      #- build-macos
       #- build-ubuntu
     runs-on: ubuntu-24.04
     steps:
