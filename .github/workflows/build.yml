@@ -424,7 +424,7 @@ jobs:
       - name: Build Example
         run: |
           mkdir examples_${{ matrix.platform.name }}
-          python3 examples/sumomo/${{ matrix.platform.name }}/run.py --local-sora-cpp-sdk-dir ..
+          python3 examples/sumomo/${{ matrix.platform.name }}/run.py
           cp _build/${{ matrix.platform.name }}/release/sumomo/sumomo examples_${{ matrix.platform.name }}
           tar -czf examples_${{ matrix.platform.name }}.tar.gz examples_${{ matrix.platform.name }}
       - name: Upload Examples Artifact
