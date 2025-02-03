@@ -348,7 +348,8 @@ jobs:
             pwd
             mkdir -p examples_${{ matrix.example.name }}
             python3 "${{ matrix.example.name }}/macos_arm64/run.py"
-            ls -la _install
+            ls -la _source/macos_arm64/release
+            ls -la _install/macos_arm64/release
             # cp "_build/macos_arm64/release/${{ matrix.example.name }}/${{ matrix.example.name }}" "examples_${{ matrix.example.name }}"
 
         # ビルドしたexamplesをアップロード
