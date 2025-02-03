@@ -431,20 +431,22 @@ jobs:
       # リポジトリをチェックアウト
       - uses: actions/checkout@v4
 
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl-dev
+
       # Ubuntu 24.04 x86_64向けの依存関係をインストール
       - name: Install deps for Ubuntu 24.04 x86_64
         if: matrix.platform.name == 'ubuntu-24.04_x86_64'
         run: |
-          sudo apt-get update
           sudo apt-get install -y libx11-dev libxext-dev
 
       # Ubuntu 24.04 ARM向けの依存関係をインストール
       - name: Install deps for Ubuntu 24.04 ARM
         if: matrix.platform.name == 'ubuntu-24.04_armv8'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y multistrap binutils-aarch64-linux-gnu
-          sudo sed -e 's/Apt::Get::AllowUnauthenticated=true/Apt::Get::AllowUnauthenticated=true";\n$config_str .= " -o Acquire::AllowInsecureRepositories=true/' -i /usr/sbin/multistrap
+          sudo apt-get install -y multistrap binutils-aarch64-linux-gnu libx11-dev libxext-dev
 
       # examplesをビルド
       - name: Build Example
@@ -468,7 +470,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: examples_${{ matrix.platform.name }}.tar.gz
-          path: examples/examples_${{ matrix.platform.name }}.tar.gz
+          path: examples/${{ matrix.platform.example.name }}_${{ matrix.platform.name}}.tar.gz
 
   # Examples をリリース
   create-release-example:
