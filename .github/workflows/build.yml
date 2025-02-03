@@ -14,7 +14,6 @@ on:
 
 jobs:
   build-windows:
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -83,21 +82,8 @@ jobs:
         with:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
-      # Examples のビルド
-      - name: Build Examples
-        run: |
-          cd examples
-          mkdir examples_${{ matrix.name }}
-          foreach ($app in @('sdl_sample', 'sumomo', 'messaging_recvonly_sample')) {
-            python3 "$app\${{ matrix.name }}\run.py" --local-sora-cpp-sdk-dir ..
-            cp "_build\${{ matrix.name }}\release\$app\Release\$app.exe" "examples_${{ matrix.name }}"
-          }
-      - name: Upload Examples Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: examples_${{ matrix.name }}
-          path: examples/examples_${{ matrix.name }}
   build-macos:
+    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -325,6 +311,45 @@ jobs:
           files: ${{ steps.env.outputs.package_paths }}
           prerelease: ${{ contains(github.ref, 'canary') }}
 
+  # Windows の Examples ビルド
+  build-windows-examples:
+    needs: create-release
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        example:
+            - name: sumomo
+    steps:
+        # リポジトリをチェックアウト
+        - uses: actions/checkout@v4
+
+        # examplesをビルド
+        - name: Build Example
+          working-directory: ${{ github.workspace }}/examples
+          run: |
+            pwd
+            mkdir -p examples_${{ matrix.example.name }}
+            python3 "${{ matrix.example.name }}/windows_x86_64/run.py"
+
+        # バイナリをコピー、圧縮
+        - name: Package Binary
+          working-directory: ${{ github.workspace }}/examples
+          run: |
+            # ディレクトリ作成
+            mkdir -p sumomo_windows_x86_64
+            # バイナリをコピー
+            cp _build/windows_x86_64/release/${{ matrix.example.name }}.exe sumomo_windows_x86_64/sumomo.exe
+            # zip作成
+            tar -czf sumomo_windows_x86_64.zip sumomo_windows_x86_64
+
+        # ビルドしたexamplesをアップロード
+        - name: Upload Examples Artifact
+          uses: actions/upload-artifact@v4
+          with:
+             # .zip まで含めないとアップロード時には設定されない
+             name: ${{ matrix.example.name }}_windows_x86_64.zip
+             path: examples/${{ matrix.example.name }}_windows_x86_64.zip
+
   # macOS の Examples ビルド
   build-macos-examples:
     needs: create-release
@@ -388,6 +413,28 @@ jobs:
             uses: softprops/action-gh-release@v2
             with:
               files: sumomo_${{ matrix.platform }}.tar.gz  # .tar.gz 付きに変更
+              prerelease: ${{ contains(github.ref, 'canary') }}
+
+  # Windows の Examples をリリース
+  create-release-example:
+      name: Create Release Examples
+      needs: build-windows-examples
+      runs-on: ubuntu-24.04
+      strategy:
+        matrix:
+          platform:
+            - windows_x86_64
+      steps:
+          - uses: actions/checkout@v4
+          # ビルドした Examples のアーティファクトをダウンロード
+          - uses: actions/download-artifact@v4
+            with:
+              name: sumomo_${{ matrix.platform }}.zip
+          # GitHub Releaseを作成し、Examplesをアップロード
+          - name: Release
+            uses: softprops/action-gh-release@v2
+            with:
+              files: sumomo_${{ matrix.platform }}.zip  # .zip 付きに変更
               prerelease: ${{ contains(github.ref, 'canary') }}
 
   notification:
