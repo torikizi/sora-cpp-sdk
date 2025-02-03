@@ -567,7 +567,7 @@ def install_boost(version, source_dir, install_dir, sora_version, platform: str)
     )
     rm_rf(os.path.join(source_dir, filename))
     archive = download(
-        f"https://github.com/shiguredo/sora-cpp-sdk/releases/download/{sora_version}/{filename}",
+        f"https://github.com/torikizi/sora-cpp-sdk/releases/download/{sora_version}/{filename}",
         output_dir=source_dir,
     )
     rm_rf(os.path.join(install_dir, "boost"))
@@ -857,7 +857,7 @@ def install_sora(version, source_dir, install_dir, platform: str):
     filename = f'sora-cpp-sdk-{version}_{platform}.{"zip" if win else "tar.gz"}'
     rm_rf(os.path.join(source_dir, filename))
     archive = download(
-        f"https://github.com/shiguredo/sora-cpp-sdk/releases/download/{version}/{filename}",
+        f"https://github.com/torikizi/sora-cpp-sdk/releases/download/{version}/{filename}",
         output_dir=source_dir,
     )
     rm_rf(os.path.join(install_dir, "sora"))
