@@ -103,7 +103,7 @@ jobs:
       matrix:
         name:
           - macos_arm64
-          - ios
+          #- ios
     name: Build sora-cpp-sdk for ${{ matrix.name }}
     runs-on: macos-14
     env:
@@ -309,31 +309,9 @@ jobs:
       #- build-ubuntu
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/download
-        with:
-          platform: windows_x86_64
       - uses: ./.github/actions/download
         with:
           platform: macos_arm64
-      - uses: ./.github/actions/download
-        with:
-          platform: ios
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-20.04_x86_64
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-22.04_x86_64
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-24.04_x86_64
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-24.04_armv8
-      - uses: ./.github/actions/download
-        with:
-          platform: android
       - name: Env to output
         run: |
           echo "package_paths<<EOF" >> $GITHUB_OUTPUT
@@ -421,6 +399,7 @@ jobs:
             ls -la examples/examples_${{ matrix.example.name }}
 
   notification:
+    if: false
     name: Slack Notification
     runs-on: ubuntu-24.04
     needs:
@@ -428,13 +407,11 @@ jobs:
       - build-macos
       - build-ubuntu
       - create-release
-    if: always()
+    #if: always()
     steps:
       - uses: rtCamp/action-slack-notify@v2
         if: |
-          needs.build-windows.result == 'failure' ||
           needs.build-macos.result == 'failure' ||
-          needs.build-ubuntu.result == 'failure' ||
           needs.create-release.result == 'failure'
         env:
           SLACK_CHANNEL: sora-cpp-sdk
