@@ -431,6 +431,21 @@ jobs:
       # リポジトリをチェックアウト
       - uses: actions/checkout@v4
 
+      # x86_64向けの依存関係をインストール
+      - name: Install deps for x86_64
+        if: matrix.platform.arch == 'x86_64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxext-dev
+
+      # ARM向けの依存関係をインストール
+      - name: Install deps for ARM
+        if: matrix.platform.arch == 'armv8'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y multistrap binutils-aarch64-linux-gnu
+          sudo sed -e 's/Apt::Get::AllowUnauthenticated=true/Apt::Get::AllowUnauthenticated=true";\n$config_str .= " -o Acquire::AllowInsecureRepositories=true/' -i /usr/sbin/multistrap
+
       # examplesをビルド
       - name: Build Example
         run: |
