@@ -341,7 +341,7 @@ jobs:
             # ディレクトリ作成
             mkdir -p sumomo_windows_x86_64
             # バイナリをコピー
-            cp _build/windows_x86_64/release/${{ matrix.example.name }}.exe sumomo_windows_x86_64/sumomo.exe
+            cp _build/windows_x86_64/release/sumomo/Release/sumomo.exe sumomo_windows_x86_64/sumomo.exe
             # zip作成
             tar -czf sumomo_windows_x86_64.zip sumomo_windows_x86_64
 
