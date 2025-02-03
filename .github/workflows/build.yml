@@ -488,11 +488,26 @@ jobs:
           #uses: softprops/action-gh-release@v2
           #with:
             #files: sumomo_${{ matrix.platform }}.tar.gz  # .tar.gz 付きに変更
-        - name: Release for Ubuntu
-          if: contains(matrix.platform, 'ubuntu-')
+        - name: Release for Ubuntu 20.04
+          if: matrix.platform == 'ubuntu-20.04_x86_64'
           uses: softprops/action-gh-release@v2
           with:
-            files: sumomo_${{ matrix.platform }}.tar.gz  # .tar.gz 付きに変更
+            files: sumomo_${{ matrix.platform }}.tar.gz
+        - name: Release for Ubuntu 22.04
+          if: matrix.platform == 'ubuntu-22.04_x86_64'
+          uses: softprops/action-gh-release@v2
+          with:
+            files: sumomo_${{ matrix.platform }}.tar.gz
+        - name: Release for Ubuntu 24.04 x86_64
+          if: matrix.platform == 'ubuntu-24.04_x86_64'
+          uses: softprops/action-gh-release@v2
+          with:
+            files: sumomo_${{ matrix.platform }}.tar.gz
+        - name: Release for Ubuntu 24.04 ARM
+          if: matrix.platform == 'ubuntu-24.04_armv8'
+          uses: softprops/action-gh-release@v2
+          with:
+            files: sumomo_${{ matrix.platform }}.tar.gz
 
   notification:
     if: false
