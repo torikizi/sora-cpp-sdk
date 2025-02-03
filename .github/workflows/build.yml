@@ -447,6 +447,8 @@ jobs:
         if: matrix.platform.name == 'ubuntu-24.04_armv8'
         run: |
           sudo apt-get install -y multistrap binutils-aarch64-linux-gnu libx11-dev libxext-dev
+          # multistrap に insecure なリポジトリからの取得を許可する設定を入れる
+          sudo sed -e 's/Apt::Get::AllowUnauthenticated=true/Apt::Get::AllowUnauthenticated=true";\n$config_str .= " -o Acquire::AllowInsecureRepositories=true/' -i /usr/sbin/multistrap
 
       # examplesをビルド
       - name: Build Example
