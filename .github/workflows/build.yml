@@ -415,28 +415,6 @@ jobs:
               files: sumomo_${{ matrix.platform }}.tar.gz  # .tar.gz 付きに変更
               prerelease: ${{ contains(github.ref, 'canary') }}
 
-  # Windows の Examples をリリース
-  create-release-example:
-      name: Create Release Examples
-      needs: build-windows-examples
-      runs-on: ubuntu-24.04
-      strategy:
-        matrix:
-          platform:
-            - windows_x86_64
-      steps:
-          - uses: actions/checkout@v4
-          # ビルドした Examples のアーティファクトをダウンロード
-          - uses: actions/download-artifact@v4
-            with:
-              name: sumomo_${{ matrix.platform }}.zip
-          # GitHub Releaseを作成し、Examplesをアップロード
-          - name: Release
-            uses: softprops/action-gh-release@v2
-            with:
-              files: sumomo_${{ matrix.platform }}.zip  # .zip 付きに変更
-              prerelease: ${{ contains(github.ref, 'canary') }}
-
   notification:
     if: false
     name: Slack Notification
