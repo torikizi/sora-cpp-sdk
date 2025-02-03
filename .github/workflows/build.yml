@@ -14,6 +14,7 @@ on:
 
 jobs:
   build-windows:
+    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -141,6 +142,7 @@ jobs:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
   build-ubuntu:
+    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -302,9 +304,9 @@ jobs:
     name: Create Release
     if: contains(github.ref, 'tags/202')
     needs:
-      - build-windows
+      # - build-windows
       - build-macos
-      - build-ubuntu
+      #- build-ubuntu
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -377,7 +379,11 @@ jobs:
             
         # SDKファイルの準備
         - name: Prepare SDK files
+          working-directory: ${{ github.workspace }}
           run: |
+            # SDK用のディレクトリを作成
+            mkdir -p sora_sdk
+            
             # SDK本体を見つけて解凍
             SDK_FILE=$(find artifacts_temp/ -name "sora-cpp-sdk-*_macos_arm64.tar.gz")
             echo "Found SDK file: $SDK_FILE"
@@ -386,24 +392,21 @@ jobs:
             BOOST_FILE=$(find artifacts_temp/ -name "boost-*_macos_arm64.tar.gz")
             echo "Found Boost file: $BOOST_FILE"
             
-            # 作業ディレクトリを作成
-            mkdir -p examples_temp
-            
             # ファイルを解凍
-            tar -xzf "$SDK_FILE" -C examples_temp
-            tar -xzf "$BOOST_FILE" -C examples_temp
+            tar -xzf "$SDK_FILE" -C sora_sdk
+            tar -xzf "$BOOST_FILE" -C sora_sdk
             
-            echo "Contents of examples_temp after extraction:"
-            ls -la examples_temp/
-  
+            echo "Contents of sora_sdk after extraction:"
+            ls -la sora_sdk/
+
         # examplesをビルド
         - name: Build Example
-          working-directory: examples
+          working-directory: ${{ github.workspace }}/examples
           run: |
-            mkdir examples_${{ matrix.example.name }}
-            python3 "${{ matrix.example.name }}/macos_arm64/run.py" --local-sora-cpp-sdk-dir ../examples_temp
-            cp "_build/${{ matrix.example.name }}/release/${{ matrix.example.name }}/${{ matrix.example.name }}" "examples_${{ matrix.example.name }}"
-  
+            mkdir -p examples_${{ matrix.example.name }}
+            python3 "${{ matrix.example.name }}/macos_arm64/run.py" --local-sora-cpp-sdk-dir ../sora_sdk
+            cp "_build/macos_arm64/release/${{ matrix.example.name }}/${{ matrix.example.name }}" "examples_${{ matrix.example.name }}"
+
         # ビルドしたexamplesをアップロード
         - name: Upload Examples Artifact
           uses: actions/upload-artifact@v4
