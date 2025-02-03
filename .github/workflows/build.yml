@@ -397,28 +397,40 @@ jobs:
              name: ${{ matrix.example.name }}_macos_arm64.tar.gz
              path: examples/${{ matrix.example.name }}_macos_arm64.tar.gz
 
-  # macOS の Examples をリリース
+  # Examples をリリース
   create-release-example:
-      if: false
       name: Create Release Examples
-      needs: build-macos-examples
+      needs: 
+        - build-windows-examples
+        #- build-macos-examples
       runs-on: ubuntu-24.04
       strategy:
         matrix:
           platform:
-            - macos_arm64
+            - windows_x86_64
+            #- macos_arm64
       steps:
-          - uses: actions/checkout@v4
-          # ビルドした Examples のアーティファクトをダウンロード
-          - uses: actions/download-artifact@v4
-            with:
-              name: sumomo_${{ matrix.platform }}.tar.gz
-          # GitHub Releaseを作成し、Examplesをアップロード
-          - name: Release
-            uses: softprops/action-gh-release@v2
-            with:
-              files: sumomo_${{ matrix.platform }}.tar.gz  # .tar.gz 付きに変更
-              prerelease: ${{ contains(github.ref, 'canary') }}
+        - uses: actions/checkout@v4
+        # ビルドした Examples のアーティファクトをダウンロード
+        - if: matrix.platform == 'windows_x86_64'
+          uses: actions/download-artifact@v4
+          with:
+            name: sumomo_${{ matrix.platform }}.zip
+        #- if: matrix.platform == 'macos_arm64'
+          #uses: actions/download-artifact@v4
+          #with:
+            #name: sumomo_${{ matrix.platform }}.tar.gz
+        # GitHub Releaseを作成し、Examplesをアップロード
+        - name: Release for Windows
+          if: matrix.platform == 'windows_x86_64'
+          uses: softprops/action-gh-release@v2
+          with:
+            files: sumomo_${{ matrix.platform }}.zip  # .zip 付きに変更
+        #- name: Release for macOS
+          #if: matrix.platform == 'macos_arm64'
+          #uses: softprops/action-gh-release@v2
+          #with:
+            #files: sumomo_${{ matrix.platform }}.tar.gz  # .tar.gz 付きに変更
 
   notification:
     if: false
