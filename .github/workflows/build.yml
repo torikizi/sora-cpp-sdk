@@ -349,12 +349,19 @@ jobs:
             mkdir -p examples_${{ matrix.example.name }}
             python3 "${{ matrix.example.name }}/macos_arm64/run.py"
 
+        # バイナリをコピー
+        - name: Copy Binary
+          working-directory: ${{ github.workspace }}/examples
+          run: |
+            mkdir -p release_artifacts
+            cp _build/macos_arm64/release/${{ matrix.example.name }}/${{ matrix.example.name }} release_artifacts/${{ matrix.example.name }}_macos_arm64
+
         # ビルドしたexamplesをアップロード
         - name: Upload Examples Artifact
           uses: actions/upload-artifact@v4
           with:
             name: ${{ matrix.example.name }}_macos_arm64
-            path: examples/_build/macos_arm64/release/${{ matrix.example.name }}
+            path: examples/release_artifacts/${{ matrix.example.name }}_macos_arm64
 
   # macOS の Examples をリリース
   create-release-example:
@@ -375,7 +382,7 @@ jobs:
           - name: Release
             uses: softprops/action-gh-release@v2
             with:
-              files: sumomo
+              files: sumomo_${{ matrix.platform }}
               prerelease: ${{ contains(github.ref, 'canary') }}
 
   notification:
