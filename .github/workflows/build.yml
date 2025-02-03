@@ -405,28 +405,50 @@ jobs:
             runs-on: ubuntu-20.04
             os: ubuntu
             arch: x86_64
+            example:
+              - name: sumomo
           - name: ubuntu-22.04_x86_64
             runs-on: ubuntu-22.04
             os: ubuntu
             arch: x86_64
+            example:
+              - name: sumomo
           - name: ubuntu-24.04_x86_64
             runs-on: ubuntu-24.04
             os: ubuntu
             arch: x86_64
+            example:
+              - name: sumomo
           - name: ubuntu-24.04_armv8
             runs-on: ubuntu-24.04
             os: ubuntu
             arch: armv8
+            example:
+              - name: sumomo
     name: Build Examples for ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
+      # リポジトリをチェックアウト
       - uses: actions/checkout@v4
+
+      # examplesをビルド
       - name: Build Example
         run: |
           mkdir examples_${{ matrix.platform.name }}
           python3 examples/sumomo/${{ matrix.platform.name }}/run.py
+
+      # バイナリをコピー、圧縮
+      - name: Package Binary
+        working-directory: ${{ github.workspace }}/examples
+        run: |
+          # ディレクトリ作成
+          mkdir -p sumomo_${{ matrix.platform.name }}
+          # バイナリをコピー
           cp _build/${{ matrix.platform.name }}/release/sumomo/sumomo examples_${{ matrix.platform.name }}
+          # tar.gz作成
           tar -czf examples_${{ matrix.platform.name }}.tar.gz examples_${{ matrix.platform.name }}
+
+      # ビルドしたexamplesをアップロード
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -435,6 +457,7 @@ jobs:
 
   # Examples をリリース
   create-release-example:
+      if: false
       name: Create Release Examples
       needs: 
         #- build-windows-examples
