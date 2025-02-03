@@ -349,19 +349,23 @@ jobs:
             mkdir -p examples_${{ matrix.example.name }}
             python3 "${{ matrix.example.name }}/macos_arm64/run.py"
 
-        # バイナリをコピー
-        - name: Copy Binary
+        # バイナリをコピー、圧縮
+        - name: Package Binary
           working-directory: ${{ github.workspace }}/examples
           run: |
-            mkdir -p release_artifacts
-            cp _build/macos_arm64/release/${{ matrix.example.name }}/${{ matrix.example.name }} release_artifacts/${{ matrix.example.name }}_macos_arm64
+            # ディレクトリ作成
+            mkdir -p sumomo_macos_arm64
+            # バイナリをコピー
+            cp _build/macos_arm64/release/${{ matrix.example.name }}/${{ matrix.example.name }} sumomo_macos_arm64/sumomo
+            # tar.gz作成
+            tar -czf sumomo_macos_arm64.tar.gz sumomo_macos_arm64
 
         # ビルドしたexamplesをアップロード
         - name: Upload Examples Artifact
           uses: actions/upload-artifact@v4
           with:
-            name: ${{ matrix.example.name }}_macos_arm64
-            path: examples/release_artifacts/${{ matrix.example.name }}_macos_arm64
+            name: sumomo_macos_arm64
+            path: examples/sumomo_macos_arm64.tar.gz
 
   # macOS の Examples をリリース
   create-release-example:
