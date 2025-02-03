@@ -364,8 +364,9 @@ jobs:
         - name: Upload Examples Artifact
           uses: actions/upload-artifact@v4
           with:
-            name: sumomo_macos_arm64
-            path: examples/sumomo_macos_arm64.tar.gz
+             # .tar.gz まで含めないとアップロード時には設定されない
+             name: ${{ matrix.example.name }}_macos_arm64.tar.gz
+             path: examples/${{ matrix.example.name }}_macos_arm64.tar.gz
 
   # macOS の Examples をリリース
   create-release-example:
@@ -381,12 +382,12 @@ jobs:
           # ビルドした Examples のアーティファクトをダウンロード
           - uses: actions/download-artifact@v4
             with:
-              name: sumomo_${{ matrix.platform }}
+              name: sumomo_${{ matrix.platform }}.tar.gz
           # GitHub Releaseを作成し、Examplesをアップロード
           - name: Release
             uses: softprops/action-gh-release@v2
             with:
-              files: sumomo_${{ matrix.platform }}
+              files: sumomo_${{ matrix.platform }}.tar.gz  # .tar.gz 付きに変更
               prerelease: ${{ contains(github.ref, 'canary') }}
 
   notification:
