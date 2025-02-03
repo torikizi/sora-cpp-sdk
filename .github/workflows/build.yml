@@ -382,6 +382,8 @@ jobs:
         - name: Build Example
           working-directory: ${{ github.workspace }}/examples
           run: |
+            cd examples
+            pwd
             mkdir -p examples_${{ matrix.example.name }}
             python3 "${{ matrix.example.name }}/macos_arm64/run.py" --local-sora-cpp-sdk-dir ../sora_sdk
             cp "_build/macos_arm64/release/${{ matrix.example.name }}/${{ matrix.example.name }}" "examples_${{ matrix.example.name }}"
