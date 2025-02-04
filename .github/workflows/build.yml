@@ -460,7 +460,7 @@ jobs:
           platform:
             - name: windows_x86_64
               file_ext: zip
-            - name: macos_arm6
+            - name: macos_arm64
               file_ext: tar.gz
             - name: ubuntu-20.04_x86_64
               file_ext: tar.gz
