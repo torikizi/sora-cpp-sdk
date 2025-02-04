@@ -453,7 +453,7 @@ jobs:
         working-directory: ${{ github.workspace }}/examples
         run: |
           pwd
-          python3 sumomo/${{ matrix.platform.name }}/run.py"
+          python3 sumomo/${{ matrix.platform.name }}/run.py
 
       # バイナリをコピー、圧縮
       - name: Package Binary
