@@ -318,33 +318,25 @@ jobs:
   build-windows-examples:
     needs: create-release
     runs-on: windows-2022
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/examples
     strategy:
       matrix:
         example:
             - name: sumomo
     steps:
-        # リポジトリをチェックアウト
         - uses: actions/checkout@v4
-
-        # examplesをビルド
         - name: Build Example
-          working-directory: ${{ github.workspace }}/examples
           run: |
-            pwd
             python3 "${{ matrix.example.name }}/windows_x86_64/run.py"
-
-        # バイナリをコピー、圧縮
         - name: Package Binary
-          working-directory: ${{ github.workspace }}/examples
           run: |
-            # ディレクトリ作成
-            mkdir -p sumomo_windows_x86_64
-            # バイナリをコピー
-            cp _build/windows_x86_64/release/sumomo/Release/sumomo.exe sumomo_windows_x86_64/sumomo.exe
+            # アップロード用のディレクトリ作成してバイナリをコピー
+            mkdir -p ${{ matrix.example.name }}_windows_x86_64
+            cp _build/windows_x86_64/release/${{ matrix.example.name }}/Release/sumomo.exe sumomo_windows_x86_64/sumomo.exe
             # PowerShell のコマンドを使って zip 作成する
             Compress-Archive -Path sumomo_windows_x86_64 -DestinationPath sumomo_windows_x86_64.zip
-
-        # ビルドしたexamplesをアップロード
         - name: Upload Examples Artifact
           uses: actions/upload-artifact@v4
           with:
@@ -356,37 +348,27 @@ jobs:
   build-macos-examples:
     needs: create-release
     runs-on: macos-14
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/examples
     strategy:
       matrix:
         example:
             - name: sumomo
     steps:
-        # リポジトリをチェックアウト
         - uses: actions/checkout@v4
-  
         # Select Xcode 15.4（build-macosと同じバージョンを使う）
         - name: Select Xcode 15.4
           run: sudo xcode-select --switch /Applications/Xcode_15.4.app/Contents/Developer
-
-        # examplesをビルド
         - name: Build Example
-          working-directory: ${{ github.workspace }}/examples
           run: |
-            pwd
             python3 "${{ matrix.example.name }}/macos_arm64/run.py"
-
-        # バイナリをコピー、圧縮
         - name: Package Binary
-          working-directory: ${{ github.workspace }}/examples
           run: |
-            # ディレクトリ作成
+            # アップロード用のディレクトリ作成してバイナリをコピー
             mkdir -p sumomo_macos_arm64
-            # バイナリをコピー
             cp _build/macos_arm64/release/${{ matrix.example.name }}/${{ matrix.example.name }} sumomo_macos_arm64/sumomo
-            # tar.gz作成
             tar -czf sumomo_macos_arm64.tar.gz sumomo_macos_arm64
-
-        # ビルドしたexamplesをアップロード
         - name: Upload Examples Artifact
           uses: actions/upload-artifact@v4
           with:
@@ -427,48 +409,37 @@ jobs:
               - name: sumomo
     name: Build Examples for ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runs-on }}
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/examples
     steps:
-      # リポジトリをチェックアウト
       - uses: actions/checkout@v4
-
       - name: Install deps
         run: |
           sudo apt-get update
           sudo apt-get install -y libgl-dev
-
-      # Ubuntu 24.04 x86_64向けの依存関係をインストール
+      # Ubuntu 24.04 x86_64 向けの依存関係をインストール
       - name: Install deps for Ubuntu 24.04 x86_64
         if: matrix.platform.name == 'ubuntu-24.04_x86_64'
         run: |
           sudo apt-get install -y libx11-dev libxext-dev
-
-      # Ubuntu 24.04 ARM向けの依存関係をインストール
+      # Ubuntu 24.04 ARM 向けの依存関係をインストール
       - name: Install deps for Ubuntu 24.04 ARM
         if: matrix.platform.name == 'ubuntu-24.04_armv8'
         run: |
           sudo apt-get install -y multistrap binutils-aarch64-linux-gnu libx11-dev libxext-dev
           # multistrap に insecure なリポジトリからの取得を許可する設定を入れる
           sudo sed -e 's/Apt::Get::AllowUnauthenticated=true/Apt::Get::AllowUnauthenticated=true";\n$config_str .= " -o Acquire::AllowInsecureRepositories=true/' -i /usr/sbin/multistrap
-
-      # examplesをビルド
       - name: Build Example
-        working-directory: ${{ github.workspace }}/examples
         run: |
           pwd
           python3 "${{ matrix.platform.example[0].name }}/${{ matrix.platform.name }}/run.py"
-
-      # バイナリをコピー、圧縮
       - name: Package Binary
-        working-directory: ${{ github.workspace }}/examples
         run: |
-          # ディレクトリ作成
+          # アップロード用のディレクトリ作成してバイナリをコピー
           mkdir -p sumomo_${{ matrix.platform.name }}
-          # バイナリをコピー
           cp _build/${{ matrix.platform.name }}/release/${{ matrix.platform.example[0].name }}/${{ matrix.platform.example[0].name }} sumomo_${{ matrix.platform.name }}/sumomo
-
-          # tar.gz作成
           tar -czf sumomo_${{ matrix.platform.name }}.tar.gz sumomo_${{ matrix.platform.name }}
-
       # ビルドしたexamplesをアップロード
       - name: Upload Examples Artifact
         uses: actions/upload-artifact@v4
@@ -487,38 +458,31 @@ jobs:
       strategy:
         matrix:
           platform:
-            - windows_x86_64
-            - macos_arm64
-            - ubuntu-20.04_x86_64
-            - ubuntu-22.04_x86_64
-            - ubuntu-24.04_x86_64
-            - ubuntu-24.04_armv8
+            - name: windows_x86_64
+              file_ext: zip
+            - name: macos_arm6
+              file_ext: tar.gz
+            - name: ubuntu-20.04_x86_64
+              file_ext: tar.gz
+            - name: ubuntu-22.04_x86_64
+              file_ext: tar.gz
+            - name: ubuntu-24.04_x86_64
+              file_ext: tar.gz
+            - name: ubuntu-24.04_armv8
+              file_ext: tar.gz
+          file_name:
+            - sumomo
       steps:
         - uses: actions/checkout@v4
         # ビルドした Examples のアーティファクトをダウンロード
-        # Windows のみ zip なので専用のダウンロード
-        - if: matrix.platform == 'windows_x86_64'
-          uses: actions/download-artifact@v4
+        - uses: actions/download-artifact@v4
           with:
-            name: sumomo_${{ matrix.platform }}.zip
-        # Windos 以外は tar.gz なのでまとめる
-        - if: matrix.platform != 'windows_x86_64'
-          uses: actions/download-artifact@v4
-          with:
-            name: sumomo_${{ matrix.platform }}.tar.gz
+            name: ${{ matrix.file_name }}_${{ matrix.platform.name }}.${{ matrix.platform.file_ext }}
         # GitHub Releaseを作成し、Examplesをアップロード
-        # Windows 用のアップロード
-        - name: Release for Windows
-          if: matrix.platform == 'windows_x86_64'
+        - name: Release Examples
           uses: softprops/action-gh-release@v2
           with:
-            files: sumomo_${{ matrix.platform }}.zip
-        # Windows 以外のアップロード
-        - name: Release for Other Platforms
-          if: matrix.platform != 'windows_x86_64'
-          uses: softprops/action-gh-release@v2
-          with:
-            files: sumomo_${{ matrix.platform }}.tar.gz
+            files: ${{ matrix.file_name }}_${{ matrix.platform.name }}.${{ matrix.platform.file_ext }}
 
   notification:
     if: false
