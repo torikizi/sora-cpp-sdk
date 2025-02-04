@@ -14,7 +14,6 @@ on:
 
 jobs:
   build-windows:
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -84,7 +83,6 @@ jobs:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
   build-macos:
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -274,18 +272,18 @@ jobs:
     name: Create Release
     if: contains(github.ref, 'tags/202')
     needs:
-      #- build-windows
-      #- build-macos
+      - build-windows
+      - build-macos
       - build-ubuntu
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      #- uses: ./.github/actions/download
-        #with:
-         #platform: windows_x86_64
-      #- uses: ./.github/actions/download
-        #with:
-          #platform: macos_arm64
+      - uses: ./.github/actions/download
+        with:
+         platform: windows_x86_64
+      - uses: ./.github/actions/download
+        with:
+          platform: macos_arm64
       - uses: ./.github/actions/download
         with:
           platform: ubuntu-20.04_x86_64
@@ -312,7 +310,6 @@ jobs:
 
   # Windows の Examples ビルド
   build-windows-examples:
-    if: false
     needs: create-release
     runs-on: windows-2022
     strategy:
@@ -351,7 +348,6 @@ jobs:
 
   # macOS の Examples ビルド
   build-macos-examples:
-    if: false
     needs: create-release
     runs-on: macos-14
     strategy:
@@ -478,15 +474,15 @@ jobs:
   create-release-example:
       name: Create Release Examples
       needs: 
-        #- build-windows-examples
-        #- build-macos-examples
+        - build-windows-examples
+        - build-macos-examples
         - build-ubuntu-examples
       runs-on: ubuntu-24.04
       strategy:
         matrix:
           platform:
-            #- windows_x86_64
-            #- macos_arm64
+            - windows_x86_64
+            - macos_arm64
             - ubuntu-20.04_x86_64
             - ubuntu-22.04_x86_64
             - ubuntu-24.04_x86_64
@@ -494,14 +490,14 @@ jobs:
       steps:
         - uses: actions/checkout@v4
         # ビルドした Examples のアーティファクトをダウンロード
-        #- if: matrix.platform == 'windows_x86_64'
-          #uses: actions/download-artifact@v4
-          #with:
-            #name: sumomo_${{ matrix.platform }}.zip
-        #- if: matrix.platform == 'macos_arm64'
-          #uses: actions/download-artifact@v4
-          #with:
-            #name: sumomo_${{ matrix.platform }}.tar.gz
+        - if: matrix.platform == 'windows_x86_64'
+          uses: actions/download-artifact@v4
+          with:
+            name: sumomo_${{ matrix.platform }}.zip
+        - if: matrix.platform == 'macos_arm64'
+          uses: actions/download-artifact@v4
+          with:
+            name: sumomo_${{ matrix.platform }}.tar.gz
         - if: matrix.platform == 'ubuntu-20.04_x86_64'
           uses: actions/download-artifact@v4
           with:
@@ -519,16 +515,16 @@ jobs:
           with:
             name: sumomo_${{ matrix.platform }}.tar.gz
         # GitHub Releaseを作成し、Examplesをアップロード
-        #- name: Release for Windows
-          #if: matrix.platform == 'windows_x86_64'
-          #uses: softprops/action-gh-release@v2
-          #with:
-            #files: sumomo_${{ matrix.platform }}.zip  # .zip 付きに変更
-        #- name: Release for macOS
-          #if: matrix.platform == 'macos_arm64'
-          #uses: softprops/action-gh-release@v2
-          #with:
-            #files: sumomo_${{ matrix.platform }}.tar.gz  # .tar.gz 付きに変更
+        - name: Release for Windows
+          if: matrix.platform == 'windows_x86_64'
+          uses: softprops/action-gh-release@v2
+          with:
+            files: sumomo_${{ matrix.platform }}.zip
+        - name: Release for macOS
+          if: matrix.platform == 'macos_arm64'
+          uses: softprops/action-gh-release@v2
+          with:
+            files: sumomo_${{ matrix.platform }}.tar.gz
         - name: Release for Ubuntu 20.04
           if: matrix.platform == 'ubuntu-20.04_x86_64'
           uses: softprops/action-gh-release@v2
@@ -571,4 +567,4 @@ jobs:
           SLACK_CHANNEL: sora-cpp-sdk
           SLACK_COLOR: danger
           SLACK_TITLE: Build failed
-          #SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
