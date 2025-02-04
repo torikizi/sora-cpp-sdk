@@ -462,7 +462,7 @@ jobs:
           # ディレクトリ作成
           mkdir -p sumomo_${{ matrix.platform.name }}
           # バイナリをコピー
-          cp _build/${{ matrix.platform.name }}/release/${{ matrix.platform.example.name }}/${{ matrix.platform.example.name }} sumomo_${{ matrix.platform.name }}/sumomo
+          cp _build/${{ matrix.platform.name }}/release/sumomo/sumomo sumomo_${{ matrix.platform.name }}/sumomo
           # tar.gz作成
           tar -czf sumomo_${{ matrix.platform.name }}.tar.gz sumomo_${{ matrix.platform.name }}
 
@@ -471,7 +471,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sumomo_${{ matrix.platform.name }}.tar.gz
-          path: examples/${{ matrix.platform.example.name }}_${{ matrix.platform.name}}.tar.gz
+          path: examples/sumomo_${{ matrix.platform.name }}.tar.gz
 
   # Examples をリリース
   create-release-example:
