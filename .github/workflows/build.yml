@@ -453,7 +453,7 @@ jobs:
         working-directory: ${{ github.workspace }}/examples
         run: |
           pwd
-          python3 sumomo/${{ matrix.platform.name }}/run.py
+          python3 "${{ matrix.platform.example[0].name }}/${{ matrix.platform.name }}/run.py"
 
       # バイナリをコピー、圧縮
       - name: Package Binary
@@ -462,7 +462,8 @@ jobs:
           # ディレクトリ作成
           mkdir -p sumomo_${{ matrix.platform.name }}
           # バイナリをコピー
-          cp _build/${{ matrix.platform.name }}/release/sumomo/sumomo sumomo_${{ matrix.platform.name }}/sumomo
+          cp _build/${{ matrix.platform.name }}/release/${{ matrix.platform.example[0].name }}/${{ matrix.platform.example[0].name }} sumomo_${{ matrix.platform.name }}/sumomo
+
           # tar.gz作成
           tar -czf sumomo_${{ matrix.platform.name }}.tar.gz sumomo_${{ matrix.platform.name }}
 
