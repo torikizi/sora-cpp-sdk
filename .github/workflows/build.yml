@@ -328,7 +328,6 @@ jobs:
           working-directory: ${{ github.workspace }}/examples
           run: |
             pwd
-            mkdir -p examples_${{ matrix.example.name }}
             python3 "${{ matrix.example.name }}/windows_x86_64/run.py"
 
         # バイナリをコピー、圧縮
@@ -372,7 +371,6 @@ jobs:
           working-directory: ${{ github.workspace }}/examples
           run: |
             pwd
-            mkdir -p examples_${{ matrix.example.name }}
             python3 "${{ matrix.example.name }}/macos_arm64/run.py"
 
         # バイナリをコピー、圧縮
@@ -452,9 +450,10 @@ jobs:
 
       # examplesをビルド
       - name: Build Example
+        working-directory: ${{ github.workspace }}/examples
         run: |
-          mkdir examples_${{ matrix.platform.name }}
-          python3 ${{ matrix.platform.example.name }}/${{ matrix.platform.name }}/run.py
+          pwd
+          python3 "${{ matrix.platform.example.name }}/${{ matrix.platform.name }}/run.py"
 
       # バイナリをコピー、圧縮
       - name: Package Binary
@@ -463,7 +462,7 @@ jobs:
           # ディレクトリ作成
           mkdir -p sumomo_${{ matrix.platform.name }}
           # バイナリをコピー
-          cp _build/${{ matrix.platform.name }}/release/sumomo/sumomo sumomo_${{ matrix.platform.name }}
+          cp _build/${{ matrix.platform.name }}/release/${{ matrix.platform.example.name }}/${{ matrix.platform.example.name }} sumomo_${{ matrix.platform.name }}/sumomo
           # tar.gz作成
           tar -czf sumomo_${{ matrix.platform.name }}.tar.gz sumomo_${{ matrix.platform.name }}
 
@@ -476,6 +475,7 @@ jobs:
 
   # Examples をリリース
   create-release-example:
+      if: false
       name: Create Release Examples
       needs: 
         #- build-windows-examples
