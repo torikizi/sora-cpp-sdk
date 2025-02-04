@@ -88,7 +88,7 @@ jobs:
       matrix:
         name:
           - macos_arm64
-          #- ios
+          - ios
     name: Build sora-cpp-sdk for ${{ matrix.name }}
     runs-on: macos-14
     env:
@@ -335,8 +335,8 @@ jobs:
             mkdir -p sumomo_windows_x86_64
             # バイナリをコピー
             cp _build/windows_x86_64/release/sumomo/Release/sumomo.exe sumomo_windows_x86_64/sumomo.exe
-            # zip作成
-            tar -czf sumomo_windows_x86_64.zip sumomo_windows_x86_64
+            # PowerShell のコマンドを使って zip 作成する
+            Compress-Archive -Path sumomo_windows_x86_64 -DestinationPath sumomo_windows_x86_64.zip
 
         # ビルドしたexamplesをアップロード
         - name: Upload Examples Artifact
