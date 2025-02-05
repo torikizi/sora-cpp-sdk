@@ -329,7 +329,7 @@ jobs:
         - uses: actions/checkout@v4
         - name: Build Example
           run: |
-            python3 "${{ matrix.example.name }}/windows_x86_64/run.py"
+            python3 ${{ matrix.example.name }}/windows_x86_64/run.py
         - name: Package Binary
           run: |
             # アップロード用のディレクトリ作成してバイナリをコピー
