@@ -83,7 +83,6 @@ jobs:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
   build-macos:
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -128,7 +127,6 @@ jobs:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
   build-ubuntu:
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -275,14 +273,35 @@ jobs:
     if: contains(github.ref, 'tags/202')
     needs:
       - build-windows
-      #- build-macos
-      #- build-ubuntu
+      - build-macos
+      - build-ubuntu
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/download
         with:
          platform: windows_x86_64
+      - uses: ./.github/actions/download
+        with:
+          platform: macos_arm64
+      - uses: ./.github/actions/download
+        with:
+          platform: ios
+      - uses: ./.github/actions/download
+        with:
+          platform: ubuntu-20.04_x86_64
+      - uses: ./.github/actions/download
+        with:
+          platform: ubuntu-22.04_x86_64
+      - uses: ./.github/actions/download
+        with:
+          platform: ubuntu-24.04_x86_64
+      - uses: ./.github/actions/download
+        with:
+          platform: ubuntu-24.04_armv8
+      - uses: ./.github/actions/download
+        with:
+          platform: android
       - name: Env to output
         run: |
           echo "package_paths<<EOF" >> $GITHUB_OUTPUT
@@ -327,7 +346,6 @@ jobs:
 
   # macOS の Examples ビルド
   build-macos-examples:
-    if: false
     needs: create-release
     runs-on: macos-14
     defaults:
@@ -360,7 +378,6 @@ jobs:
 
   # Ubuntu の Examples ビルド
   build-ubuntu-examples:
-    if: false
     needs: create-release
     strategy:
       fail-fast: false
@@ -435,14 +452,24 @@ jobs:
       name: Create Release Examples
       needs: 
         - build-windows-examples
-        #- build-macos-examples
-        #- build-ubuntu-examples
+        - build-macos-examples
+        - build-ubuntu-examples
       runs-on: ubuntu-24.04
       strategy:
         matrix:
           platform:
             - name: windows_x86_64
               file_ext: zip
+            - name: macos_arm64
+              file_ext: tar.gz
+            - name: ubuntu-20.04_x86_64
+              file_ext: tar.gz
+            - name: ubuntu-22.04_x86_64
+              file_ext: tar.gz
+            - name: ubuntu-24.04_x86_64
+              file_ext: tar.gz
+            - name: ubuntu-24.04_armv8
+              file_ext: tar.gz
           file_name:
             - sumomo
       steps:
