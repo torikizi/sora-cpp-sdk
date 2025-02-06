@@ -272,36 +272,16 @@ jobs:
     name: Create Release
     if: contains(github.ref, 'tags/202')
     needs:
-      - build-windows
       - build-macos
-      - build-ubuntu
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/download
-        with:
-          platform: windows_x86_64
       - uses: ./.github/actions/download
         with:
           platform: macos_arm64
       - uses: ./.github/actions/download
         with:
           platform: ios
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-20.04_x86_64
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-22.04_x86_64
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-24.04_x86_64
-      - uses: ./.github/actions/download
-        with:
-          platform: ubuntu-24.04_armv8
-      - uses: ./.github/actions/download
-        with:
-          platform: android
       - name: Env to output
         run: |
           echo "package_paths<<EOF" >> $GITHUB_OUTPUT
@@ -316,6 +296,7 @@ jobs:
 
   # Windows の Examples ビルド
   build-windows-examples:
+    if: false
     needs: create-release
     runs-on: windows-2022
     defaults:
@@ -379,6 +360,7 @@ jobs:
 
   # Ubuntu の Examples ビルド
   build-ubuntu-examples:
+    if: false
     needs: create-release
     runs-on: ${{ matrix.platform.runs-on }}
     defaults:
@@ -437,26 +419,16 @@ jobs:
   create-release-example:
       name: Create Release Examples
       needs: 
-        - build-windows-examples
+        #- build-windows-examples
         - build-macos-examples
-        - build-ubuntu-examples
+        #- build-ubuntu-examples
       runs-on: ubuntu-24.04
       strategy:
         matrix:
           example:
             - name: sumomo
           platform:
-            - name: windows_x86_64
-              file_ext: zip
             - name: macos_arm64
-              file_ext: tar.gz
-            - name: ubuntu-20.04_x86_64
-              file_ext: tar.gz
-            - name: ubuntu-22.04_x86_64
-              file_ext: tar.gz
-            - name: ubuntu-24.04_x86_64
-              file_ext: tar.gz
-            - name: ubuntu-24.04_armv8
               file_ext: tar.gz
       steps:
         - uses: actions/checkout@v4
