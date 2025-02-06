@@ -14,6 +14,7 @@ on:
 
 jobs:
   build-windows:
+    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -98,8 +99,6 @@ jobs:
       TEST_MATRIX_NAME: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode 15.4
-        run: sudo xcode-select --switch /Applications/Xcode_15.4.app/Contents/Developer
       - name: Env to output
         run: |
           echo "user=`users`" >> $GITHUB_OUTPUT
@@ -127,6 +126,7 @@ jobs:
           name: ${{ matrix.name }}.env
           path: _package/${{ matrix.name }}/release/sora.env
   build-ubuntu:
+    if: false
     strategy:
       fail-fast: false
       matrix:
