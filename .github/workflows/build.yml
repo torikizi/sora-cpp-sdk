@@ -14,7 +14,6 @@ on:
 
 jobs:
   build-windows:
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -98,7 +97,6 @@ jobs:
           name: examples_${{ matrix.name }}
           path: examples/examples_${{ matrix.name }}
   build-macos:
-    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -318,7 +316,8 @@ jobs:
     name: Create Release
     if: contains(github.ref, 'tags/202')
     needs:
-      #- build-macos
+      - build-windows
+      - build-macos
       - build-ubuntu
     runs-on: ubuntu-24.04
     steps:
@@ -326,6 +325,12 @@ jobs:
       - uses: ./.github/actions/download
         with:
           platform: windows_x86_64
+      - uses: ./.github/actions/download
+        with:
+          platform: macos_arm64
+      - uses: ./.github/actions/download
+        with:
+          platform: ios
       - uses: ./.github/actions/download
         with:
           platform: ubuntu-20.04_x86_64
@@ -355,7 +360,6 @@ jobs:
 
   # Windows の Examples ビルド
   build-windows-examples:
-    if: false
     needs: create-release
     runs-on: windows-2022
     defaults:
@@ -385,7 +389,6 @@ jobs:
 
   # macOS の Examples ビルド
   build-macos-examples:
-    if: false
     needs: create-release
     runs-on: macos-14
     defaults:
