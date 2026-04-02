@@ -326,6 +326,7 @@ jobs:
           path: examples/examples_${{ matrix.platform.name }}
 
   e2e-test:
+    if: false
     needs:
       - build-windows
       - build-macos

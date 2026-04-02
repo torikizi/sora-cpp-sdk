@@ -1,14 +1,19 @@
 import argparse
+import difflib
 import glob
 import hashlib
 import json
 import logging
 import multiprocessing
 import os
+import re
 import shutil
+import subprocess
 import tarfile
+import urllib.error
+import urllib.request
 import zipfile
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from buildbase import (
     Platform,
@@ -49,6 +54,15 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+WEBRTC_BUILD_RELEASES_API_URL = (
+    "https://api.github.com/repos/shiguredo-webrtc-build/webrtc-build/releases?per_page=100"
+)
+WEBRTC_BUILD_TRACKS: Dict[str, Dict[str, Any]] = {
+    "normal": {
+        "tag_pattern": re.compile(r"^m(\d+)\.(\d+)\.(\d+)\.(\d+)$"),
+        "branch_prefix": "feature/update-libwebrtc-",
+    },
+}
 
 
 def read_version(version_path):
@@ -657,6 +671,212 @@ def check_version_file():
         has_error = True
     if has_error:
         raise Exception("VERSION/DEPS mismatch")
+
+
+def _fetch_webrtc_build_releases() -> List[Dict[str, Any]]:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "sora-cpp-sdk/update-webrtc-build",
+    }
+    github_token = os.environ.get("GITHUB_TOKEN")
+    if github_token is not None:
+        headers["Authorization"] = f"Bearer {github_token}"
+
+    request = urllib.request.Request(WEBRTC_BUILD_RELEASES_API_URL, headers=headers)
+    try:
+        with urllib.request.urlopen(request) as response:
+            payload = json.load(response)
+    except urllib.error.HTTPError as e:
+        raise Exception(f"GitHub Releases API の取得に失敗しました: HTTP {e.code}") from e
+    except urllib.error.URLError as e:
+        raise Exception(f"GitHub Releases API に接続できませんでした: {e.reason}") from e
+
+    if not isinstance(payload, list):
+        raise Exception("GitHub Releases API のレスポンス形式が不正です")
+
+    return payload
+
+
+def _parse_webrtc_build_tag_tuple(tag: str, track: str) -> Optional[tuple]:
+    match = WEBRTC_BUILD_TRACKS[track]["tag_pattern"].fullmatch(tag)
+    if match is None:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
+def _select_latest_webrtc_build_version(track: str) -> str:
+    candidates = []
+    for release in _fetch_webrtc_build_releases():
+        if release.get("draft") or release.get("prerelease"):
+            continue
+
+        tag_name = release.get("tag_name")
+        if not isinstance(tag_name, str):
+            continue
+
+        tag_tuple = _parse_webrtc_build_tag_tuple(tag_name, track)
+        if tag_tuple is None:
+            continue
+
+        candidates.append((tag_tuple, tag_name))
+
+    if len(candidates) == 0:
+        raise Exception("対象トラックの release tag が見つかりませんでした")
+
+    return max(candidates)[1]
+
+
+def _replace_version_assignment(path: str, key: str, version: str) -> str:
+    text = open(path, encoding="utf-8").read()
+    pattern = re.compile(rf"^(?P<key>{re.escape(key)})=.*$", re.MULTILINE)
+    updated, count = pattern.subn(rf"\g<key>={version}", text, count=1)
+    if count != 1:
+        raise Exception(f"{path} の {key} を更新できませんでした")
+    return updated
+
+
+def _replace_webrtc_build_changes(version: str) -> str:
+    path = os.path.join(BASE_DIR, "CHANGES.md")
+    text = open(path, encoding="utf-8").read()
+
+    develop_header = re.search(r"^## develop$", text, re.MULTILINE)
+    if develop_header is None:
+        raise Exception("CHANGES.md に ## develop セクションがありません")
+
+    section_start = develop_header.end()
+    rest = text[section_start:]
+    next_section = re.search(r"^## ", rest, re.MULTILINE)
+    section_end = section_start + (next_section.start() if next_section is not None else len(rest))
+
+    develop_section = text[section_start:section_end]
+    updated_section, count = re.subn(
+        r"^- \[UPDATE\] libwebrtc のバージョンを .+ に上げる$",
+        f"- [UPDATE] libwebrtc のバージョンを {version} に上げる",
+        develop_section,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    if count != 1:
+        raise Exception("CHANGES.md の develop セクションで libwebrtc 更新行を置換できませんでした")
+
+    lines = updated_section.splitlines(keepends=True)
+    for i, line in enumerate(lines):
+        if line.rstrip("\n") != "- [UPDATE] Examples の DEPS を更新する":
+            continue
+        if i + 1 >= len(lines):
+            raise Exception("CHANGES.md の Examples の DEPS 更新行の次にバージョン行がありません")
+        next_line = lines[i + 1].rstrip("\n")
+        if re.fullmatch(r"  - WEBRTC_BUILD_VERSION を .+ にあげる", next_line) is None:
+            raise Exception("CHANGES.md の Examples の DEPS 更新行の直後が想定外です")
+        suffix = "\n" if lines[i + 1].endswith("\n") else ""
+        lines[i + 1] = f"  - WEBRTC_BUILD_VERSION を {version} にあげる{suffix}"
+        break
+    else:
+        raise Exception("CHANGES.md の develop セクションで Examples の DEPS 更新行が見つかりませんでした")
+
+    return text[:section_start] + "".join(lines) + text[section_end:]
+
+
+def _remote_branch_exists(branch_name: str) -> bool:
+    result = cmd(
+        ["git", "ls-remote", "--exit-code", "--heads", "origin", branch_name],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    if result.returncode == 0:
+        return True
+    if result.returncode == 2:
+        return False
+    message = result.stderr.strip() or result.stdout.strip() or "unknown error"
+    raise Exception(f"remote branch の確認に失敗しました: {message}")
+
+
+def _update_webrtc_build_files(version: str, dry_run: bool) -> tuple:
+    deps_path = os.path.join(BASE_DIR, "DEPS")
+    examples_deps_path = os.path.join(BASE_DIR, "examples", "DEPS")
+    changes_path = os.path.join(BASE_DIR, "CHANGES.md")
+    originals = {
+        deps_path: open(deps_path, encoding="utf-8").read(),
+        examples_deps_path: open(examples_deps_path, encoding="utf-8").read(),
+        changes_path: open(changes_path, encoding="utf-8").read(),
+    }
+    updated = {
+        deps_path: _replace_version_assignment(deps_path, "WEBRTC_BUILD_VERSION", version),
+        examples_deps_path: _replace_version_assignment(
+            examples_deps_path, "WEBRTC_BUILD_VERSION", version
+        ),
+        changes_path: _replace_webrtc_build_changes(version),
+    }
+
+    changed_files = [
+        os.path.relpath(path, BASE_DIR)
+        for path in (deps_path, examples_deps_path, changes_path)
+        if originals[path] != updated[path]
+    ]
+    if len(changed_files) != 3:
+        raise Exception("更新対象ファイルが想定どおり 3 ファイルではありません")
+
+    diff = ""
+    for path in (deps_path, examples_deps_path, changes_path):
+        diff += "".join(
+            difflib.unified_diff(
+                originals[path].splitlines(keepends=True),
+                updated[path].splitlines(keepends=True),
+                fromfile=os.path.relpath(path, BASE_DIR),
+                tofile=os.path.relpath(path, BASE_DIR),
+            )
+        )
+
+    if not dry_run:
+        for path, content in updated.items():
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+    return changed_files, diff
+
+
+def _update_webrtc_build(base_branch: str, track: str, dry_run: bool):
+    deps = read_version_file(os.path.join(BASE_DIR, "DEPS"))
+    example_deps = read_version_file(os.path.join(BASE_DIR, "examples", "DEPS"))
+    current_version = deps["WEBRTC_BUILD_VERSION"]
+    example_version = example_deps["WEBRTC_BUILD_VERSION"]
+    if current_version != example_version:
+        raise Exception(
+            "DEPS と examples/DEPS の WEBRTC_BUILD_VERSION が一致していません: "
+            f"{current_version} != {example_version}"
+        )
+
+    latest_version = _select_latest_webrtc_build_version(track)
+    branch_name = f"{WEBRTC_BUILD_TRACKS[track]['branch_prefix']}{latest_version}"
+    commit_message = f"libwebrtc のバージョンを {latest_version} に上げる"
+    result = {
+        "base_branch": base_branch,
+        "branch_name": branch_name,
+        "changed_files": [],
+        "commit_message": commit_message,
+        "current_version": current_version,
+        "diff": "",
+        "latest_version": latest_version,
+        "track": track,
+    }
+
+    if current_version == latest_version:
+        result["status"] = "up-to-date"
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    if _remote_branch_exists(branch_name):
+        result["status"] = "branch-exists"
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    changed_files, diff = _update_webrtc_build_files(latest_version, dry_run)
+    result["changed_files"] = changed_files
+    result["diff"] = diff
+    result["status"] = "would-update" if dry_run else "updated"
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 AVAILABLE_TARGETS = [
@@ -1396,6 +1616,11 @@ def main():
     fp = sp.add_parser("format")
     fp.set_defaults(op="format")
     fp.add_argument("--clang-format-path", type=str, default=None)
+    up = sp.add_parser("update_webrtc_build")
+    up.set_defaults(op="update_webrtc_build")
+    up.add_argument("--base-branch", type=str, default="develop")
+    up.add_argument("--track", choices=sorted(WEBRTC_BUILD_TRACKS.keys()), default="normal")
+    up.add_argument("--dry-run", action="store_true")
 
     args = parser.parse_args()
 
@@ -1422,6 +1647,12 @@ def main():
     elif args.op == "format":
         _format(
             clang_format_path=args.clang_format_path,
+        )
+    elif args.op == "update_webrtc_build":
+        _update_webrtc_build(
+            base_branch=args.base_branch,
+            track=args.track,
+            dry_run=args.dry_run,
         )
 
 
