@@ -1,0 +1,93 @@
+name: update-webrtc-build
+
+on:
+  schedule:
+    - cron: "15 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-webrtc-build:
+    name: Update webrtc-build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Run updater
+        id: updater
+        run: |
+          cp ./scripts/update_webrtc_build.sh _update_webrtc_build.sh
+          ./_update_webrtc_build.sh
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          data = json.loads(Path("update-result.json").read_text(encoding="utf-8"))
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as fh:
+              for key in ("status", "branch_name", "latest_version", "commit_message", "current_version"):
+                  fh.write(f"{key}={data[key]}\n")
+              if data["status"] == "updated":
+                  commit_sha = subprocess.check_output(
+                      ["git", "rev-parse", "HEAD"], text=True
+                  ).strip()
+                  fh.write(f"commit_sha={commit_sha}\n")
+          PY
+
+      - name: Write summary
+        if: always()
+        env:
+          COMMIT_SHA: ${{ steps.updater.outputs.commit_sha }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          summary_path = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          result_path = Path("update-result.json")
+
+          if not result_path.exists():
+              summary_path.write_text(
+                  "# webrtc-build update result\n\n- status: `failed`\n",
+                  encoding="utf-8",
+              )
+              raise SystemExit(0)
+
+          data = json.loads(result_path.read_text(encoding="utf-8"))
+          lines = [
+              "# webrtc-build update result",
+              "",
+              f"- status: `{data['status']}`",
+              f"- base branch: `{data['base_branch']}`",
+              f"- current version: `{data['current_version']}`",
+              f"- latest version: `{data['latest_version']}`",
+          ]
+
+          if data["status"] == "updated" and os.environ.get("COMMIT_SHA"):
+              lines.extend(
+                  [
+                      f"- branch: `{data['branch_name']}`",
+                      f"- commit: `{os.environ.get('COMMIT_SHA', '')}`",
+                  ]
+              )
+          elif data["status"] == "updated":
+              lines.append("- note: branch 作成または push に失敗しました")
+          elif data["status"] == "branch-exists":
+              lines.extend(
+                  [
+                      f"- branch: `{data['branch_name']}`",
+                      "- note: remote branch は既に存在します",
+                  ]
+              )
+          elif data["status"] == "up-to-date":
+              lines.append("- note: 更新はありません")
+
+          summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
