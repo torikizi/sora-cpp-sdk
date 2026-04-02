@@ -2,7 +2,7 @@
 
 set -ex
 
-cd $(dirname $0)
+cd $(dirname $0)/..
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
   git config --global user.name "${GITHUB_ACTOR}"
@@ -11,11 +11,7 @@ fi
 
 git checkout develop
 
-# update_webrtc_build コマンドが存在しないブランチに切り替わっても困らないように、
-# checkout 前の run.py をコピーして利用する
-cp run.py _run.py
-
-python3 _run.py update_webrtc_build --base-branch develop --track normal > update-result.json
+python3 run.py update_webrtc_build --base-branch develop --track normal > update-result.json
 
 eval "$(python3 - <<'PY'
 import json
@@ -30,6 +26,9 @@ PY
 )"
 
 if [ "$STATUS" != "updated" ]; then
+  if [ "$GITHUB_ACTIONS" != "true" ]; then
+    rm -f update-result.json
+  fi
   exit 0
 fi
 
@@ -39,4 +38,6 @@ git commit -m "$COMMIT_MESSAGE"
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
   git push origin "$BRANCH_NAME"
+else
+  rm -f update-result.json
 fi
