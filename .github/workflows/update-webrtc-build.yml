@@ -21,8 +21,7 @@ jobs:
       - name: Run updater
         id: updater
         run: |
-          cp ./scripts/update_webrtc_build.sh _update_webrtc_build.sh
-          ./_update_webrtc_build.sh
+          ./scripts/update_webrtc_build.sh
           python3 - <<'PY'
           import json
           import os
