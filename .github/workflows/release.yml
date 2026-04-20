@@ -21,7 +21,7 @@ jobs:
       TEST_MATRIX_NAME: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v6
-      - uses: microsoft/setup-msbuild@v2
+      - uses: microsoft/setup-msbuild@v3
       - name: Env to output
         run: |
           echo "userprofile=${Env:USERPROFILE}" >> ${Env:GITHUB_OUTPUT}
@@ -262,7 +262,7 @@ jobs:
           distribution: "temurin"
       - name: Setup Android SDK
         if: matrix.platform.os == 'android'
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
       - run: python3 run.py build --test --run-e2e-test --package ${{ matrix.platform.name }}
       - name: Get package name
         run: |
