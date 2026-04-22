@@ -58,7 +58,7 @@ jobs:
           key: windows-cuda-${{ steps.versions.outputs.cuda_version }}.v1
       - run: echo "${CUDA_VERSION}" > _install\windows_x86_64\release\cuda.version
         if: steps.cache-cuda.outputs.cache-hit == 'true'
-      - run: python3 run.py build --test --package ${{ matrix.name }}
+      - run: python3 run.py build --test --run-e2e-test --package ${{ matrix.name }}
         env:
           SORA_CPP_SDK_TEMP_DIR: C:\
       - name: Get package name
@@ -121,7 +121,7 @@ jobs:
         run: |
           echo "user=`users`" >> $GITHUB_OUTPUT
         id: env
-      - run: python3 run.py build --test --package ${{ matrix.name }}
+      - run: python3 run.py build --test --run-e2e-test --package ${{ matrix.name }}
       - name: Get package name
         run: |
           source _package/${{ matrix.name }}/release/sora.env
@@ -326,7 +326,6 @@ jobs:
           path: examples/examples_${{ matrix.platform.name }}
 
   e2e-test:
-    if: false
     needs:
       - build-windows
       - build-macos
@@ -355,52 +354,52 @@ jobs:
             platform-name: windows_x86_64
             runs-on: windows-2025
           # Self-hosted runner for Apple Video Toolbox
-          - name: apple_video_toolbox
-            platform-name: macos_arm64
-            runs-on:
-              group: Self
-              labels: [self-hosted, macOS, ARM64, Apple-M2-Pro]
-            test-target: test_sumomo_apple_video_toolbox.py
-            env-vars: |
-              APPLE_VIDEO_TOOLBOX=true
+          # - name: apple_video_toolbox
+          #   platform-name: macos_arm64
+          #   runs-on:
+          #     group: Self
+          #     labels: [self-hosted, macOS, ARM64, Apple-M2-Pro]
+          #   test-target: test_sumomo_apple_video_toolbox.py
+          #   env-vars: |
+          #     APPLE_VIDEO_TOOLBOX=true
           # Self-hosted runner for NVIDIA Video Codec
-          - name: nvidia_video_codec
-            platform-name: ubuntu-24.04_x86_64
-            runs-on:
-              group: Self
-              labels: [self-hosted, linux, x64, NVIDIA-Video-Codec-SDK]
-            test-target: test_sumomo_nvidia_video_codec.py
-            env-vars: |
-              NVIDIA_VIDEO_CODEC=true
+          # - name: nvidia_video_codec
+          #   platform-name: ubuntu-24.04_x86_64
+          #   runs-on:
+          #     group: Self
+          #     labels: [self-hosted, linux, x64, NVIDIA-Video-Codec-SDK]
+          #   test-target: test_sumomo_nvidia_video_codec.py
+          #   env-vars: |
+          #     NVIDIA_VIDEO_CODEC=true
           # Self-hosted runner for Intel VPL
-          - name: intel_vpl
-            platform-name: ubuntu-24.04_x86_64
-            runs-on:
-              group: Self
-              labels: [self-hosted, linux, x64, Intel-VPL]
-            test-target: test_sumomo_intel_vpl.py
-            env-vars: |
-              INTEL_VPL=true
-              LIBVA_MESSAGING_LEVEL=0
+          # - name: intel_vpl
+          #   platform-name: ubuntu-24.04_x86_64
+          #   runs-on:
+          #     group: Self
+          #     labels: [self-hosted, linux, x64, Intel-VPL]
+          #   test-target: test_sumomo_intel_vpl.py
+          #   env-vars: |
+          #     INTEL_VPL=true
+          #     LIBVA_MESSAGING_LEVEL=0
           # Self-hosted runner for AMD AMF
           # AMD-AMF はあまりにも不安定なため、安定するまでコメントアウトする
-          - name: amd_amf
-            platform-name: ubuntu-24.04_x86_64
-            runs-on:
-              group: Self
-              labels: [self-hosted, linux, x64, AMD-AMF]
-            env-vars: |
-              AMD_AMF=true
-            test-target: test_sumomo_amd_amf.py
+          # - name: amd_amf
+          #   platform-name: ubuntu-24.04_x86_64
+          #   runs-on:
+          #     group: Self
+          #     labels: [self-hosted, linux, x64, AMD-AMF]
+          #   env-vars: |
+          #     AMD_AMF=true
+          #   test-target: test_sumomo_amd_amf.py
           # Self-hosted runner for Raspberry Pi
-          - name: raspberry_pi
-            platform-name: raspberry-pi-os_armv8
-            runs-on:
-              group: Self
-              labels: [self-hosted, linux, arm64, Raspberry-Pi]
-            test-target: test_sumomo_raspberry_pi.py
-            env-vars: |
-              RASPBERRY_PI=true
+          # - name: raspberry_pi
+          #   platform-name: raspberry-pi-os_armv8
+          #   runs-on:
+          #     group: Self
+          #     labels: [self-hosted, linux, arm64, Raspberry-Pi]
+          #   test-target: test_sumomo_raspberry_pi.py
+          #   env-vars: |
+          #     RASPBERRY_PI=true
     name: E2E Test for ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runs-on }}
     env:
